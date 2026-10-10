@@ -1,0 +1,242 @@
+<!-- {
+  "title": "Matchmaking & parties",
+  "lead": "How queueing with friends works, from the table to the draft. Every queue entry is a party, and a solo player is a party of one.",
+  "description": "How FLICKED's matchmaker gathers parties by seats, checks they can be split into equal teams, drafts the most balanced split, and handles party lifecycle and invites.",
+  "source": "docs/PARTY.md"
+} -->
+<h2>The decision everything follows from</h2>
+
+<blockquote><p><strong>Every queue entry is a party. A solo player is a party of one.</strong></p></blockquote>
+
+<p>The alternative was a nullable <code>PartyId</code> on a per-player queue row, with the matchmaker grouping
+rows back together on every pass. That keeps two shapes of queue entry alive forever, and every piece of
+matchmaking then has to handle both: gather, balance, requeue, the count the launcher shows, the rating
+window. The solo path is the one that gets tested while the party path is the one that breaks.</p>
+
+<p>Making the party the unit means there is one shape. The matchmaker never asks whether something is a
+party; it asks <strong>how many seats it takes</strong>. Solo queueing works because a solo player
+<em>is</em> a party, not because there is a branch for them.</p>
+
+<h2>Data model</h2>
+
+<pre class="mermaid-src">
+erDiagram
+    Player ||--o| PartyMember : "is in at most one"
+    Party  ||--|{ PartyMember : has
+    Party  ||--o{ PartyInvite : "has pending"
+    Player ||--o{ PartyInvite : "is invited by"
+    Party  ||--o| QueueEntry  : "queues as one"
+    Party  }o--|| Player      : "led by"
+</pre>
+
+<h3>Party</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><code>Id</code></td><td>int</td><td></td></tr>
+    <tr><td><code>LeaderId</code></td><td>int → Player</td><td>Only the leader queues and invites</td></tr>
+    <tr><td><code>CreatedAt</code></td><td>timestamptz</td><td>For sweeping abandoned parties</td></tr>
+  </tbody>
+</table>
+
+<h3>PartyMember</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><code>PartyId</code></td><td>int → Party</td><td></td></tr>
+    <tr><td><code>PlayerId</code></td><td>int → Player, <strong>unique</strong></td><td>The database enforces one party per player</td></tr>
+    <tr><td><code>JoinedAt</code></td><td>timestamptz</td><td>Display order, and who leads next</td></tr>
+  </tbody>
+</table>
+
+<p><strong>That unique index is load-bearing.</strong> Two invites accepted in the same instant, or one
+accepted twice by a retrying client, cannot put a player in two parties: the second insert violates the
+index and the transaction fails. No lock, no check-then-act race, and it holds even if two API instances
+ever run at once.</p>
+
+<h3>PartyInvite</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><code>PartyId</code></td><td>int → Party</td><td></td></tr>
+    <tr><td><code>ToPlayerId</code></td><td>int → Player</td><td>Unique together with <code>PartyId</code>, so inviting twice is a no-op</td></tr>
+    <tr><td><code>FromPlayerId</code></td><td>int → Player</td><td>Who asked, so the launcher can say</td></tr>
+    <tr><td><code>ExpiresAt</code></td><td>timestamptz</td><td>An invite nobody answers stops existing</td></tr>
+  </tbody>
+</table>
+
+<p><code>QueueEntry</code> points at a <code>PartyId</code>, still unique: a party is either waiting or it is not.
+The party has one queue time, so it has one widening rating window rather than five windows to
+reconcile.</p>
+
+<h2>Party rating</h2>
+
+<p>Two numbers, used for different things, and the difference matters.</p>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <div class="card">
+    <p class="eyebrow">For finding opponents</p>
+    <p class="card-title mt-2">The highest rating in the party</p>
+    <p class="card-text">A 2600 player queueing with a 1200 friend is a 2600-strength player in the match. Averaging would hand them opponents their friend cannot play against.</p>
+  </div>
+  <div class="card">
+    <p class="eyebrow">For balancing teams</p>
+    <p class="card-title mt-2">The sum of members' ratings</p>
+    <p class="card-text">Team strength is the whole side, not its best player.</p>
+  </div>
+</div>
+
+<h2>Gathering a match</h2>
+
+<p>The matchmaker anchors on the longest-waiting party and admits anyone whose rating gap fits inside
+<em>both</em> parties' windows. Windows widen by 25 points every ten seconds of waiting. Admitting somebody
+adds their whole party, so the group is assembled by seats rather than by heads.</p>
+
+<p>A set of parties is only usable if it satisfies <strong>two</strong> conditions:</p>
+
+<ol>
+  <li>the sizes sum to exactly the match size, and</li>
+  <li>those sizes can be split into two teams of equal size <strong>without splitting a party</strong>.</li>
+</ol>
+
+<aside class="callout callout-warn"><div>
+  <p>The second is not implied by the first. Parties of <strong>4, 3 and 3</strong> sum to ten and cannot be
+  split into two fives: 4 + 3 is seven, and the remaining 3 is not five. That match must not be formed,
+  because forming it means splitting a party across teams, which is the one thing a party is for.</p>
+</div></aside>
+
+<p>The check is a subset-sum over at most ten items: a few hundred operations, a few times a minute. Not a
+cost worth optimising, but a check worth having.</p>
+
+<pre data-lang="text" data-title="pseudocode">
+gather(waiting, size, now):
+    for anchor in waiting (oldest first):
+        group = [anchor]
+
+        for other in waiting, excluding anchor:
+            if group.seats + other.size > size:  continue      # would overflow
+            gap     = |other.rating - anchor.rating|           # rating = party max
+            allowed = min(anchor.tolerance(now), other.tolerance(now))
+            if gap > allowed: continue
+
+            group.add(other)
+            if group.seats == size and splittable(group, size / 2):
+                return group
+
+    return none        # nobody compatible yet; the windows widen and we try again
+</pre>
+
+<p><strong>"The match size" is not always ten.</strong> An instance that sets
+<a href="configuration.html#matchmaking"><code>Matchmaking:MinCompetitivePlayers</code></a> will, once the
+longest-waiting party has waited twenty seconds, also try eight, then six, down to that minimum. Both
+conditions still apply. Full matches are gathered for everybody first, and the sizes tried are always
+even.</p>
+
+<h2>Drafting the teams</h2>
+
+<p>Among the splits that keep every party whole, the draft picks the one with the
+<strong>smallest difference in total rating</strong>. With at most ten parties there are at most 2<sup>10</sup>
+candidate splits, and far fewer of the right size. Enumerating them is cheaper than the database round
+trip before it, and unlike a snake draft it is <em>exact</em>: no arrangement of these parties balances
+better.</p>
+
+<pre data-lang="text" data-title="pseudocode">
+balance(parties, teamSize):
+    best = none
+    for each subset of parties whose sizes total teamSize:
+        difference = |sum(ratings in subset) - sum(ratings not in subset)|
+        keep the subset with the smallest difference
+    return best as team A, the rest as team B
+</pre>
+
+<p>Solo players are parties of one, so this replaced the old snake draft for them too, and balances them
+better than it did.</p>
+
+<h2>After a cancelled match</h2>
+
+<p>When somebody fails to accept, the players who did accept go back to the queue so they do not lose
+their place, with one rule for parties:</p>
+
+<blockquote><p><strong>A party is requeued only if every one of its members accepted.</strong> If one member did
+not, the party is dropped from the queue. Putting the rest back without them would break the party
+up.</p></blockquote>
+
+<h2>Lifecycle</h2>
+
+<pre class="mermaid-src">
+stateDiagram-v2
+    [*] --> Solo: signed in
+    Solo --> InParty: accepted an invite / invited someone
+    InParty --> Solo: left, kicked, or disbanded
+    InParty --> Queued: leader queues
+    Queued --> InParty: leader cancels
+    Queued --> InMatch: matched
+    InMatch --> InParty: match over or cancelled
+    Solo --> Queued: queues alone (a party of one)
+</pre>
+
+<ul>
+  <li><strong>Membership changes dequeue the party.</strong> Somebody joining or leaving changes the seat
+  count and the party's rating, and a queue entry that no longer describes its party is a match formed on
+  stale information.</li>
+  <li><strong>Only the leader queues, invites and kicks.</strong> Not for hierarchy: otherwise two members
+  could queue for different modes at the same moment.</li>
+  <li><strong>If the leader leaves</strong>, the longest-standing remaining member becomes leader. An empty
+  party is deleted.</li>
+  <li><strong>Invites expire after two minutes</strong> and are swept by <code>MatchmakerJanitor</code>. A
+  stale invite offers a party that may have disbanded, filled up, or already be in a match.</li>
+</ul>
+
+<h2>The party API</h2>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/party</span><span class="endpoint-desc">Your party, its members, and your invites</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party</span><span class="endpoint-desc">Create one. Usually implicit: inviting creates it</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party/invite/{playerId}</span><span class="endpoint-desc">Leader only. The invitee must be a friend</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party/invites/{partyId}/accept</span><span class="endpoint-desc">Accept an invite sent to you</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/party/invites/{partyId}</span><span class="endpoint-desc">Decline one sent to you, or cancel one you sent</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/party/members/{playerId}</span><span class="endpoint-desc">Leave (yourself) or kick (leader)</span></div>
+</div>
+
+<p>Rules worth stating, because they are security and not manners:</p>
+
+<ul>
+  <li><strong>Only friends can be invited.</strong> Without it, any signed-in account could spam invites at
+  any player id it can guess.</li>
+  <li><strong>A party holds at most as many members as a team</strong>, five for Competitive. Checked when
+  accepting, not when inviting, because the party may fill between the two.</li>
+  <li><strong>The leader check is server-side on every mutation.</strong> The launcher hides the buttons;
+  that is a courtesy, not a control.</li>
+  <li><strong>Pending invites are capped</strong> at ten per party, so nobody can make the poll expensive for
+  everyone the invites were sent to.</li>
+</ul>
+
+<h2>Getting it to the launcher</h2>
+
+<p>Party state is not a new poll; it joins the one that already existed. The launcher polls
+<code>/api/social/state</code> every five seconds while focused and once a minute when not, with an ETag so
+unchanged state answers <code>304</code> with no body.</p>
+
+<pre data-lang="json" data-title="GET /api/social/state">
+{
+  "friends":  [ ... ],
+  "requests": [ ... ],
+  "party":    { "leaderId": 12, "members": [ ... ] },
+  "invites":  [ { "partyId": 7, "fromName": "Nyx", "expiresAt": "..." } ]
+}
+</pre>
+
+<p>The ETag covers all four, so a party invite arriving makes the next poll return <code>200</code> and the
+whole panel updates together. One request means a friend list and a party list can never be drawn from
+different instants.</p>
+
+<h2>Not in the first version</h2>
+
+<ul>
+  <li><strong>Party codes.</strong> A short code to join by, for when an invite is the wrong shape. Planned:
+  see the <a href="roadmap.html#planned">roadmap</a>.</li>
+  <li><strong>Party chat.</strong> A different problem with a different transport.</li>
+  <li><strong>Leader transfer by choice.</strong> Automatic transfer on leaving is enough.</li>
+  <li><strong>Cross-mode parties.</strong> The party queues for one mode, chosen by the leader.</li>
+  <li><strong>Presence.</strong> Belongs with the push channel that eventually replaces polling.</li>
+</ul>

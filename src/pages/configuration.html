@@ -1,0 +1,166 @@
+<!-- {
+  "title": "Configuration",
+  "lead": "Every setting the backend reads, what it defaults to, and what breaks when it is wrong. Most deployment problems are one of three addresses.",
+  "description": "All FLICKED backend configuration keys: public URLs, Steam, admins, encryption keys, database and matchmaking sizes.",
+  "source": "backend/Flicked.Api/Program.cs"
+} -->
+<h2>Where settings come from</h2>
+
+<p>The API is a standard ASP.NET Core app, so any setting can come from <code>appsettings.json</code>, the
+environment, or the command line. On top of that it reads a <code>.env</code> file: it looks in the
+content root and up to two parent folders, and uses the first one it finds.</p>
+
+<ul>
+  <li><strong>Next to the binary</strong> in production, for example <code>C:\flicked\api\.env</code> or
+  <code>/opt/flicked/api/.env</code>.</li>
+  <li><strong><code>backend/.env</code></strong> in development, found by walking up from the project.</li>
+  <li><strong>Environment variables win.</strong> A key already set in the environment is skipped when
+  <code>.env</code> is read. In the environment, write <code>:</code> as <code>__</code>, for example
+  <code>Api__PublicUrl</code>.</li>
+</ul>
+
+<aside class="callout callout-warn"><div>
+  <p><code>.env</code> holds your database password and Steam key. It is gitignored and must stay that way.
+  On Linux, make it readable by the service user only (<code>chmod 600</code>).</p>
+</div></aside>
+
+<h2>The three addresses</h2>
+
+<p>Nearly every deployment problem is one of these being wrong, and each fails quietly rather than
+loudly. Each is read by a different program on a different machine, which is why none of them can be
+<code>localhost</code> in production.</p>
+
+<pre class="mermaid-src" data-caption="Who reads which address">
+graph LR
+    browser["A friend's browser"] -->|"Steam:PublicUrl"| api["Flicked.Api :5165"]
+    launcher["Launcher"] -->|"FLICKED_API, compiled in"| api
+    cs2["CS2 server + MatchZy"] -->|"Api:PublicUrl"| api
+    api -->|"RCON"| cs2
+</pre>
+
+<table>
+  <thead><tr><th>Setting</th><th>Read by</th><th>If it is wrong</th></tr></thead>
+  <tbody>
+    <tr><td><code>Steam:PublicUrl</code></td><td>A player's browser, signing in</td><td>Sign-in sends them back to their own PC</td></tr>
+    <tr><td><code>Api:PublicUrl</code></td><td>The CS2 server, fetching a match config</td><td>The server fetches nothing and stays on its old map, with no error anywhere</td></tr>
+    <tr><td><code>FLICKED_API</code></td><td>The launcher, compiled in at build time</td><td>The launcher looks for FLICKED on the player's own machine</td></tr>
+  </tbody>
+</table>
+
+<h2>Backend reference</h2>
+
+<h3>Network and URLs</h3>
+
+<table>
+  <thead><tr><th>Key</th><th>Default</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>Steam:PublicUrl</code></td><td><em>required</em></td><td>This API as a browser reaches it. Steam redirects back here after sign-in. Sign-in throws if it is missing; development sets it to <code>http://localhost:5165</code></td></tr>
+    <tr><td><code>Api:PublicUrl</code></td><td>falls back to <code>FLICKED_API_PUBLIC_URL</code>, then <code>Steam:PublicUrl</code></td><td>This API as a CS2 server reaches it. Sent to the server over RCON as the config URL and the event endpoint</td></tr>
+    <tr><td><code>Dashboard:Url</code></td><td><code>http://localhost:3000</code></td><td>Where the dashboard runs. Added to CORS by name, and used for the dashboard's sign-in redirect. Alias <code>FLICKED_DASHBOARD_URL</code></td></tr>
+    <tr><td><code>urls</code></td><td>localhost only</td><td>The interfaces Kestrel listens on. Use <code>http://0.0.0.0:5165</code> to be reachable directly, or <code>http://127.0.0.1:5165</code> behind a proxy</td></tr>
+  </tbody>
+</table>
+
+<h3>Identity and secrets</h3>
+
+<table>
+  <thead><tr><th>Key</th><th>Default</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>STEAM_API_KEY</code></td><td><em>none</em></td><td>Reads names and avatars from Steam. Free from <a href="https://steamcommunity.com/dev/apikey">steamcommunity.com/dev/apikey</a>. Alias <code>Steam:ApiKey</code></td></tr>
+    <tr><td><code>FLICKED_ADMIN_STEAM_IDS</code></td><td><em>nobody</em></td><td>Comma-separated SteamID64s allowed into the dashboard. Checked on the server on every request. Alias <code>Admin:SteamIds</code></td></tr>
+    <tr><td><code>DataProtection:KeyPath</code></td><td><code>&lt;content root&gt;/keys</code></td><td>The folder holding the keys that encrypt stored RCON passwords. Alias <code>FLICKED_KEY_PATH</code>. <strong>Back it up</strong></td></tr>
+  </tbody>
+</table>
+
+<aside class="callout callout-warn"><div>
+  <p><strong>The key folder does not travel.</strong> Lose it and every stored RCON password becomes
+  unreadable. Copy a database to a new machine without it and you will see
+  <code>Server X has an unreadable RCON password; set it again</code> until each password is re-entered in
+  the dashboard. In Docker this path must be a mounted volume.</p>
+</div></aside>
+
+<h3>Database</h3>
+
+<table>
+  <thead><tr><th>Key</th><th>Default</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>ConnectionStrings:Flicked</code></td><td><em>required</em></td><td>The Npgsql connection string. Development points it at the Docker database</td></tr>
+    <tr><td><code>Database:AutoMigrate</code></td><td><code>true</code></td><td>Apply EF Core migrations on startup, so a self-hoster upgrades by replacing a binary. Set to <code>false</code> to run migrations yourself</td></tr>
+  </tbody>
+</table>
+
+<h3 id="matchmaking">Matchmaking</h3>
+
+<table>
+  <thead><tr><th>Key</th><th>Default</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>Matchmaking:CompetitivePlayers</code></td><td class="num">10</td><td>Players in a full Competitive match. Set to <code>2</code> to test with one other person</td></tr>
+    <tr><td><code>Matchmaking:WingmanPlayers</code></td><td class="num">4</td><td>Players in a full Wingman match</td></tr>
+    <tr><td><code>Matchmaking:MinCompetitivePlayers</code></td><td>same as full</td><td>The smallest Competitive match worth starting when nobody else turns up. Equal to the full size means off</td></tr>
+    <tr><td><code>Matchmaking:MinWingmanPlayers</code></td><td>same as full</td><td>The same, for Wingman</td></tr>
+    <tr><td><code>Matchmaking:ShortHandedAfterSeconds</code></td><td class="num">20</td><td>How long the longest-waiting party waits before a short match is tried</td></tr>
+  </tbody>
+</table>
+
+<h4>Short-handed matches</h4>
+
+<p>For a small community that cannot reliably find ten people, set a minimum and the matchmaker will,
+after the wait, form a 4v4 or 3v3 out of whoever is queueing, largest first. A full match is always tried
+first, so a short match is never formed around players who could have had a real one.</p>
+
+<pre data-lang="ini" data-title=".env">
+Matchmaking:MinCompetitivePlayers=6
+Matchmaking:MinWingmanPlayers=2
+Matchmaking:ShortHandedAfterSeconds=20
+</pre>
+
+<ul>
+  <li><strong>Matches are always even.</strong> A minimum of 5 or 7 is read as 6 or 8, and nine people
+  waiting become one 4v4 plus one player still in the queue. 5v4 is not a match worth starting.</li>
+  <li><strong>A party can still be too big.</strong> Party size is capped at half a <em>full</em> match. A
+  five-stack on an instance with a minimum of 6 can only ever play a full 5v5, because six seats split
+  3-3 and a party is never split.</li>
+</ul>
+
+<h2>Build-time settings</h2>
+
+<p>These are baked into a build. Changing them means rebuilding and redistributing.</p>
+
+<table>
+  <thead><tr><th>Variable</th><th>Used by</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>FLICKED_API</code></td><td>Launcher</td><td>The API address, compiled into both the Rust side and the webview so they cannot disagree. Unset means <code>http://localhost:5165</code></td></tr>
+    <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>Dashboard</td><td>The API address the dashboard calls</td></tr>
+  </tbody>
+</table>
+
+<h2>Dashboard runtime</h2>
+
+<table>
+  <thead><tr><th>Variable</th><th>Typical value</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><code>PORT</code></td><td><code>3000</code></td><td>The port the standalone Next.js server listens on</td></tr>
+    <tr><td><code>HOSTNAME</code></td><td><code>0.0.0.0</code> or <code>127.0.0.1</code></td><td>Next binds to localhost otherwise. Use loopback behind a proxy</td></tr>
+  </tbody>
+</table>
+
+<h2>A complete example</h2>
+
+<p>A production <code>.env</code> for a single VPS serving plain HTTP. For HTTPS behind Caddy, see
+<a href="deploy-linux.html#configure">Deploy on Linux</a>.</p>
+
+<pre data-lang="ini" data-title="C:\flicked\api\.env">
+ConnectionStrings:Flicked=Host=localhost;Port=5432;Database=flicked;Username=flicked;Password=<db-password>
+
+# This machine as the outside world sees it. Never localhost.
+Steam:PublicUrl=http://<vps-address>:5165
+Api:PublicUrl=http://<vps-address>:5165
+Dashboard:Url=http://<vps-address>:3000
+
+# Listen on every interface, not just localhost.
+urls=http://0.0.0.0:5165
+
+STEAM_API_KEY=<your-steam-web-api-key>
+FLICKED_ADMIN_STEAM_IDS=<your-steamid64>
+DataProtection:KeyPath=C:\flicked\keys
+</pre>

@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roadmap &amp; decisions · FLICKED Docs</title>
+  <meta name="description" content="FLICKED's current status, known gaps, planned work, what is not planned, and the decision log behind the architecture.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Roadmap &amp; decisions · FLICKED Docs">
+  <meta property="og:description" content="FLICKED's current status, known gaps, planned work, what is not planned, and the decision log behind the architecture.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html" aria-current="page">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html" aria-current="page">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">Project</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">Roadmap &amp; decisions</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">Where FLICKED is going, why it looks the way it does, and the decisions behind it, each with what it costs.</p>
+          </header>
+        <div class="prose-docs">
+<h2 id="what-this-project-has-to-work-with">What this project has to work with<a class="anchor" href="#what-this-project-has-to-work-with" aria-label="Link to this section">#</a></h2>
+
+<p>Worth stating plainly, because it explains most of the decisions below.</p>
+
+<div class="grid gap-3 sm:grid-cols-3">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5"><p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">People</p><p class="mt-1.5 text-[15px] font-semibold text-foreground">One person</p><p class="mt-1 text-[13.5px] leading-relaxed">Part time, learning some parts of the stack while building them.</p></div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5"><p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Hardware</p><p class="mt-1.5 text-[15px] font-semibold text-foreground">One VPS</p><p class="mt-1 text-[13.5px] leading-relaxed">No second machine to test failover on, and no fleet of idle CS2 servers.</p></div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5"><p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Budget</p><p class="mt-1.5 text-[15px] font-semibold text-foreground">None for infrastructure</p><p class="mt-1 text-[13.5px] leading-relaxed">Anything that only works when servers are left running is out of reach.</p></div>
+</div>
+
+<p>Code that has never run against the thing it manages is not finished code, it is a guess. A server pool can
+be tested properly on one machine, with a single real CS2 server proving the end-to-end path. Where real
+capacity is needed, it comes from the people who already have it: server owners run CS2 servers anyway, and
+FLICKED coordinates them.</p>
+
+<h2 id="where-it-is">Where it is<a class="anchor" href="#where-it-is" aria-label="Link to this section">#</a></h2>
+
+<p class="eyebrow">As of 27 September 2026</p>
+
+<p>The whole path works end to end, on a real server, with real people: two players signed in through Steam,
+queued, accepted, voted a map, and CS2 connected them itself. The match finished and the result was written
+to Postgres.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Shipped</th><th>What it means</th></tr></thead>
+  <tbody>
+    <tr><td>Real data</td><td>News, leaderboard and history come from Postgres. Migrations apply on startup, so upgrading is replacing a binary</td></tr>
+    <tr><td>Accounts</td><td>Steam sign-in, with the session token held in Rust and never handed to the webview</td></tr>
+    <tr><td>Server pool</td><td>Servers registered in the dashboard, RCON passwords encrypted, claims with <code>FOR UPDATE SKIP LOCKED</code>, leases, offline detection</td></tr>
+    <tr><td>Matches</td><td>Widening rating windows, accept and map-vote phases, RCON start, and waiting for the map to change before handing out the address</td></tr>
+    <tr><td>Results and rating</td><td>Reported over an authenticated endpoint, applied once per match. See <a href="rating.html">Rating</a></td></tr>
+    <tr><td>Parties</td><td>Queueing with friends, drafted onto the same team. See <a href="parties.html">Matchmaking &amp; parties</a></td></tr>
+    <tr><td>Short-handed matches</td><td>Opt-in 4v4 or 3v3 after twenty seconds for small communities, always even</td></tr>
+    <tr><td>News</td><td>Admins write posts in the dashboard; every launcher reads the one feed</td></tr>
+    <tr><td>Dashboard and guides</td><td>Server pool and news pages, and deployment guides for <a href="deploy-windows.html">Windows</a> and <a href="deploy-linux.html">Linux</a></td></tr>
+  </tbody>
+</table></div>
+
+<aside class="callout callout-note"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div>
+  <p><strong>Shipped is not the same as proven.</strong> Parties and rating are merged, tested and deployed, but no
+  party has formed between two real launchers and no rating has moved in a live match yet.</p>
+</div></aside>
+
+<h2 id="known-gaps">Known gaps<a class="anchor" href="#known-gaps" aria-label="Link to this section">#</a></h2>
+
+<p>Things that are wrong or missing today, written down so they are not rediscovered. A good place to start
+contributing.</p>
+
+<ul>
+  <li><strong>Declining a match does not requeue anyone.</strong> Only the twenty-second timeout path does. With
+  parties it also costs a party its place in the queue.</li>
+  <li><strong>A cancelled Wingman match requeues its players into Competitive.</strong> The mode is not stored on
+  the match.</li>
+  <li><strong>Wingman is disabled in the launcher.</strong> The backend supports it; there is no Wingman server in
+  the pool to send it to.</li>
+  <li><strong>No live updates.</strong> Friends, parties and the queue are polled. A push channel would replace the
+  transport without changing what the screens read.</li>
+  <li><strong>No presence.</strong> Whether a friend is online, in menus or in a match belongs with that push
+  channel.</li>
+  <li><strong>Demos are recorded but not linked</strong> to a match anywhere a player can reach.</li>
+  <li><strong>A stuck match needs SQL.</strong> There is no admin action to cancel one, and a player can leave the
+  queue but not a match.</li>
+  <li><strong>Seeded demo players</strong> share the leaderboard with real ones on any instance that ran the
+  migrations.</li>
+  <li><strong>The live instance runs over plain HTTP</strong>, deliberately, for testing among friends. See
+  <a href="security.html">Security</a>.</li>
+</ul>
+
+<h2 id="planned">Planned<a class="anchor" href="#planned" aria-label="Link to this section">#</a></h2>
+
+<p>Roughly in order.</p>
+
+<div class="space-y-3.5">
+  <div class="card">
+    <div class="flex items-center gap-3"><div class="card-icon !mb-0"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg></div><p class="card-title">A FLICKED plugin, built on MatchZy</p></div>
+    <p class="card-text mt-3">Not a better plugin: one that answers to one backend. Per-match admin control from the dashboard, moderation while a match is live, and stats shaped the way FLICKED stores them. MatchZy is MIT licensed, so the route is to fork it, keep what works, and credit it properly. Nothing starts until the current arrangement is genuinely the limiting factor.</p>
+  </div>
+  <div class="card">
+    <div class="flex items-center gap-3"><div class="card-icon !mb-0"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg></div><p class="card-title">Bans</p></div>
+    <p class="card-text mt-3">First a ban on the Steam account, which is simple and enough for the usual case; later a hardware ban. This is moderation, not anti-cheat: it removes people an admin decided to remove and detects nothing. A hardware ban means collecting identifiers from players' machines, which players deserve to be told about plainly. It raises the cost of coming back; it does not prevent it.</p>
+  </div>
+  <div class="card">
+    <div class="flex items-center gap-3"><div class="card-icon !mb-0"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><p class="card-title">Party codes</p></div>
+    <p class="card-text mt-3">A short code the leader can share, for when an invite is the wrong shape: a Discord call, a friend not on your list yet. The groundwork is done; a code is one column and one endpoint.</p>
+  </div>
+</div>
+
+<h2 id="not-planned">Not planned<a class="anchor" href="#not-planned" aria-label="Link to this section">#</a></h2>
+
+<ul>
+  <li><strong>Anti-cheat.</strong> See the decision below.</li>
+  <li><strong>Creating or hosting CS2 servers.</strong> Not ruled out forever, but not planned.</li>
+  <li><strong>Mobile apps, a web launcher, tournaments and brackets.</strong> Maybe one day. Not promised.</li>
+</ul>
+
+<h2 id="decisions">Decisions<a class="anchor" href="#decisions" aria-label="Link to this section">#</a></h2>
+
+<p>Why things are the way they are, newest first. Each entry is what was decided, why, and what it costs.</p>
+
+<h3 id="2026-09-20-server-owners-bring-the-servers">2026-09-20 · Server owners bring the servers<a class="anchor" href="#2026-09-20-server-owners-bring-the-servers" aria-label="Link to this section">#</a></h3>
+
+<p><strong>Decided:</strong> FLICKED keeps a pool of CS2 servers that owners register themselves. It claims one for
+a match and releases it afterwards. It does not create, host or destroy servers.</p>
+
+<p><strong>Why:</strong> orchestration is an infrastructure product on its own: containers on demand, ports,
+capacity, cleaning up dead servers. None of it is about CS2. It is also not testable here: orchestration is
+judged on what happens when a machine dies mid-match or ten matches start at once, and with one VPS none of
+that could be tried, only hoped for.</p>
+
+<p><strong>What it costs:</strong> self-hosters run their own CS2 servers, which is normal for community tooling.
+The door stays open: provisioning would just be another way a row lands in the pool table, and matchmaking
+would never notice.</p>
+
+<h3 id="2026-09-20-matchzy-first-a-custom-plugin-later">2026-09-20 · MatchZy first, a custom plugin later<a class="anchor" href="#2026-09-20-matchzy-first-a-custom-plugin-later" aria-label="Link to this section">#</a></h3>
+
+<p><strong>Decided:</strong> use MatchZy to run matches instead of writing a plugin first.</p>
+
+<p><strong>Why:</strong> it already does match configs, knife rounds, pauses, demo recording and event webhooks.
+Writing that again would take months and produce something worse. The backend only needs two endpoints.</p>
+
+<p><strong>What it costs:</strong> a dependency on MatchZy's config and event format. It is open source and C#,
+so it can be read, and forked if it stops fitting.</p>
+
+<h3 id="2026-09-20-no-anti-cheat">2026-09-20 · No anti-cheat<a class="anchor" href="#2026-09-20-no-anti-cheat" aria-label="Link to this section">#</a></h3>
+
+<p><strong>Decided:</strong> drop the planned C++ anti-cheat.</p>
+
+<p><strong>Why:</strong> anti-cheat is specialist and adversarial, and doing it badly is worse than not doing it,
+because it promises a protection that is not real. The people it is up against work full time on getting past
+it.</p>
+
+<p><strong>What it costs:</strong> cheating is left to the server owner, using community anti-cheat. Honest silence
+beats a badge nobody should rely on.</p>
+
+<h3 id="2026-09-19-postgresql-in-docker-not-xampp-s-mysql">2026-09-19 · PostgreSQL in Docker, not XAMPP's MySQL<a class="anchor" href="#2026-09-19-postgresql-in-docker-not-xampp-s-mysql" aria-label="Link to this section">#</a></h3>
+
+<p><strong>Decided:</strong> PostgreSQL, run through <code>docker compose</code>.</p>
+
+<p><strong>Why:</strong> the leaderboard is a ranking query, and Postgres has window functions and
+<code>FOR UPDATE SKIP LOCKED</code> for handing out servers without two matches claiming the same one. EF Core's
+Npgsql provider is the best supported. Self-hosting should be one command rather than a list of
+installers.</p>
+
+<p><strong>What it costs:</strong> Docker Desktop and WSL2 have to be installed before anything runs locally.</p>
+
+<h3 id="2026-09-19-c-for-the-backend">2026-09-19 · C# for the backend<a class="anchor" href="#2026-09-19-c-for-the-backend" aria-label="Link to this section">#</a></h3>
+
+<p><strong>Decided:</strong> ASP.NET Core, over Go.</p>
+
+<p><strong>Why:</strong> the CS2 side is already C#. CounterStrikeSharp and MatchZy are C#, so a future plugin will
+be too, and one language means one set of match and player models. SignalR covers live updates later, and EF
+Core gives self-hosters real migrations.</p>
+
+<p><strong>What it costs:</strong> a heavier runtime than Go: containers around 100 MB rather than 20 MB, and higher
+idle memory on a small VPS.</p>
+
+<h3 id="rust-and-tauri-for-the-launcher">Rust and Tauri for the launcher<a class="anchor" href="#rust-and-tauri-for-the-launcher" aria-label="Link to this section">#</a></h3>
+
+<p><strong>Decided:</strong> Tauri with a React and TypeScript UI, over Electron.</p>
+
+<p><strong>Why:</strong> players keep the launcher open while they queue, so it has to be light. Tauri uses the
+system webview instead of shipping a browser: a download of a few megabytes instead of a hundred. Its native
+side matters too: the session token can live in Rust and never enter the webview.</p>
+
+<p><strong>What it costs:</strong> Rust is the least familiar language in the project, so that side is slower to
+write, and Tauri's ecosystem is smaller than Electron's.</p>
+
+<h3 id="writing-a-new-decision">Writing a new decision<a class="anchor" href="#writing-a-new-decision" aria-label="Link to this section">#</a></h3>
+
+<p>Keep it short, and be honest about the cost. A decision with no trade-off usually means the trade-off has
+not been found yet.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">docs/ROADMAP.md</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-markdown"><span class="hljs-section">## YYYY-MM-DD · Short title</span>
+
+<span class="hljs-strong">**Decided:**</span> what was chosen.
+
+<span class="hljs-strong">**Why:**</span> the reason, in plain words.
+
+<span class="hljs-strong">**What it costs:**</span> what is given up, or who has to do more work because of it.</code></pre></div>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="design.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Design system</span>
+          </a>
+          <a href="contributing.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] items-end text-right sm:col-start-2">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Next<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Contributing</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#what-this-project-has-to-work-with">What this project has to work with</a>
+          <a class="toc-link" href="#where-it-is">Where it is</a>
+          <a class="toc-link" href="#known-gaps">Known gaps</a>
+          <a class="toc-link" href="#planned">Planned</a>
+          <a class="toc-link" href="#not-planned">Not planned</a>
+          <a class="toc-link" href="#decisions">Decisions</a>
+          <a class="toc-link toc-sub" href="#2026-09-20-server-owners-bring-the-servers">2026-09-20 · Server owners bring the servers</a>
+          <a class="toc-link toc-sub" href="#2026-09-20-matchzy-first-a-custom-plugin-later">2026-09-20 · MatchZy first, a custom plugin later</a>
+          <a class="toc-link toc-sub" href="#2026-09-20-no-anti-cheat">2026-09-20 · No anti-cheat</a>
+          <a class="toc-link toc-sub" href="#2026-09-19-postgresql-in-docker-not-xampp-s-mysql">2026-09-19 · PostgreSQL in Docker, not XAMPP's MySQL</a>
+          <a class="toc-link toc-sub" href="#2026-09-19-c-for-the-backend">2026-09-19 · C# for the backend</a>
+          <a class="toc-link toc-sub" href="#rust-and-tauri-for-the-launcher">Rust and Tauri for the launcher</a>
+          <a class="toc-link toc-sub" href="#writing-a-new-decision">Writing a new decision</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/docs/ROADMAP.md" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

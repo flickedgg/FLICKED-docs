@@ -1,0 +1,93 @@
+<!-- {
+  "title": "Security",
+  "lead": "FLICKED is a hobby project you host yourself. This is what that honestly means, so you can decide what you are comfortable with.",
+  "description": "What running FLICKED over plain HTTP costs, what FLICKED does protect, what must never be committed, and how to report a vulnerability.",
+  "source": "docs/DEPLOY.md#security"
+} -->
+<h2>Plain HTTP is for testing only</h2>
+
+<p>The <a href="deploy-windows.html">Windows guide</a> uses <code>http://</code> throughout, and <strong>that is not safe
+for anything beyond a test among people you know</strong>. It is written that way deliberately: it gets a
+setup working without a domain or certificates. It is not production ready.</p>
+
+<p>With no TLS:</p>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <p class="flex items-center gap-2 text-[14.5px] font-semibold text-foreground"><span class="text-warning">{{icon:key:size-4}}</span>Session tokens in the clear</p>
+    <p class="mt-1.5 text-[13.5px] leading-relaxed">Anyone between a player and your VPS (the same café Wi-Fi, a compromised router, an ISP) can read a token and act as that player until it expires.</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <p class="flex items-center gap-2 text-[14.5px] font-semibold text-foreground"><span class="text-warning">{{icon:shield:size-4}}</span>Admin cookies in the clear</p>
+    <p class="mt-1.5 text-[13.5px] leading-relaxed">Yours is an admin session. Whoever captures it can add, edit and remove servers.</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <p class="flex items-center gap-2 text-[14.5px] font-semibold text-foreground"><span class="text-warning">{{icon:server:size-4}}</span>RCON passwords over HTTP</p>
+    <p class="mt-1.5 text-[13.5px] leading-relaxed">They are encrypted once they reach the database, but the form carrying them is not protected in transit.</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <p class="flex items-center gap-2 text-[14.5px] font-semibold text-foreground"><span class="text-warning">{{icon:alert:size-4}}</span>No proof of identity</p>
+    <p class="mt-1.5 text-[13.5px] leading-relaxed">Without a certificate, neither a launcher nor a browser can tell your API from something answering in its place.</p>
+  </div>
+</div>
+
+<aside class="callout callout-tip"><div>
+  <p><strong>The fix is about an hour.</strong> Put a domain in front with <a href="https://caddyserver.com">Caddy</a>,
+  which obtains a certificate automatically. The three addresses become <code>https://</code> and the launcher
+  needs rebuilding. <a href="deploy-linux.html#6-https">Deploy on Linux</a> walks through it, and it removes every
+  point above.</p>
+</div></aside>
+
+<h2>What FLICKED does protect</h2>
+
+<ul>
+  <li><strong>Session tokens are stored hashed.</strong> The database holds a SHA-256 of a token, so a database
+  dump does not hand over live sessions.</li>
+  <li><strong>RCON passwords are encrypted at rest</strong>, with the keys kept outside the database in
+  <code>DataProtection:KeyPath</code>. A stolen database alone does not yield them.</li>
+  <li><strong>FLICKED never sees a Steam password.</strong> Sign-in is Steam's own OpenID flow, verified server
+  to server.</li>
+  <li><strong>The launcher's webview never holds a token.</strong> Rust keeps it in the OS keychain and makes
+  the authenticated calls itself.</li>
+  <li><strong>Admin actions are checked on the server</strong> against <code>FLICKED_ADMIN_STEAM_IDS</code>, on
+  every request. Hidden buttons are a courtesy, not a control.</li>
+  <li><strong>Forwarded headers are trusted only from loopback</strong>, so nobody can claim their request
+  arrived over HTTPS.</li>
+</ul>
+
+<p>The full table of credentials, where each lives and how it is stored, is in
+<a href="architecture.html#who-is-trusted-with-what">Architecture</a>.</p>
+
+<h2>What must never be committed</h2>
+
+<p><code>.env</code> is in <code>.gitignore</code> and belongs there. If one of these reaches a commit, treat it as
+public from the moment it is pushed. Rewriting history does not recall clones, forks, or anyone who already
+fetched.</p>
+
+<table>
+  <thead><tr><th>Leaked</th><th>What to do</th></tr></thead>
+  <tbody>
+    <tr><td><code>STEAM_API_KEY</code></td><td>Revoke and regenerate it at Steam</td></tr>
+    <tr><td>Database password</td><td>Change it in Postgres and in <code>.env</code></td></tr>
+    <tr><td>RCON passwords</td><td>Change them on each CS2 server, then re-enter them in the dashboard</td></tr>
+    <tr><td><code>DataProtection</code> keys</td><td>Rotate the folder, then re-enter every RCON password</td></tr>
+  </tbody>
+</table>
+
+<p>A public repository also publishes things that are not secrets but do describe your setup: addresses,
+open ports, which services run where. None of that is a credential, and a port scan finds most of it
+anyway, which is why these docs use <code>&lt;vps-address&gt;</code> rather than a live host.</p>
+
+<h2>Your server address is not a secret</h2>
+
+<p>It surprises people: a CS2 server's address is published to every player who connects, appears in their
+console, and is compiled into the launcher you hand out. It cannot be kept private while people play on it.
+What matters is that the credentials above stay out of the repository.</p>
+
+<h2>Reporting a vulnerability</h2>
+
+<p><strong>Do not open a public issue.</strong> Contact the maintainer privately and give them time to fix it
+first. If you think you have committed a credential yourself, say so immediately rather than quietly
+force-pushing: the fix is to rotate the credential, not to hide the commit.</p>
+
+<p>Changes that make the secure path easier are very welcome. See <a href="contributing.html">Contributing</a>.</p>

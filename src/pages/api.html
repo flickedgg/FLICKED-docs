@@ -1,0 +1,202 @@
+<!-- {
+  "title": "API reference",
+  "lead": "Every HTTP endpoint the backend exposes, grouped by who calls it. The launcher, the dashboard and CS2 servers each authenticate differently, and no endpoint accepts more than one kind of caller.",
+  "description": "FLICKED backend HTTP API: authentication, public endpoints, player endpoints for queue, party and friends, admin endpoints, and the endpoints CS2 servers call.",
+  "source": "backend/Flicked.Api/Controllers"
+} -->
+<p>The API serves on <code>http://localhost:5165</code> in development. In the Development environment an OpenAPI
+document is mapped as well. Request and response bodies are JSON with camelCase properties.</p>
+
+<h2>Authentication</h2>
+
+<table>
+  <thead><tr><th>Caller</th><th>Sends</th><th>Resolved by</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag"><span class="dot bg-primary-light"></span>Player</span></td><td><code>Authorization: Bearer &lt;token&gt;</code> from the launcher</td><td><code>CurrentPlayer</code></td></tr>
+    <tr><td><span class="tag"><span class="dot bg-warning"></span>Admin</span></td><td>The <code>flicked.session</code> HttpOnly cookie from the dashboard, for a player listed in <code>FLICKED_ADMIN_STEAM_IDS</code></td><td><code>CurrentPlayer</code> + <code>Admins</code></td></tr>
+    <tr><td><span class="tag"><span class="dot bg-slate"></span>Server</span></td><td><code>X-Server-Token</code>, issued when an admin registers the server</td><td><code>ServerAuth</code></td></tr>
+    <tr><td><span class="tag"><span class="dot bg-slate"></span>Match</span></td><td><code>X-Match-Token</code>, minted per match and sent to the server over RCON</td><td>Compared against <code>Matches.ConfigTokenHash</code></td></tr>
+  </tbody>
+</table>
+
+<p>Player endpoints accept either a bearer token or the cookie, since both resolve to the same
+<code>Sessions</code> row. Every action works on the signed-in player: there is no "on behalf of" anywhere, so
+the launcher cannot queue, accept or vote for somebody else. All tokens are stored as SHA-256 hashes.</p>
+
+<h3>Getting a launcher token</h3>
+
+<ol class="steps">
+  <li><strong>Open the sign-in page</strong>
+  <p>The launcher listens on a free loopback port and opens <code>/auth/steam/login?port=&lt;port&gt;</code> in the
+  system browser.</p></li>
+  <li><strong>Steam verifies the player</strong>
+  <p>The backend checks the assertion with Steam server to server, then redirects to
+  <code>127.0.0.1:&lt;port&gt;?code=…</code> with a single-use code that expires in two minutes.</p></li>
+  <li><strong>Exchange the code</strong>
+<pre data-lang="json" data-title="POST /auth/exchange">
+{ "code": "…" }
+</pre>
+<pre data-lang="json" data-title="200 OK">
+{
+  "token": "…",
+  "expiresAt": "2026-11-09T18:00:00Z",
+  "playerId": 12,
+  "name": "Nyx",
+  "steamId": "76561198000000000",
+  "avatarUrl": "https://avatars.steamstatic.com/…"
+}
+</pre>
+  <p>The token is shown once. The launcher keeps it in the OS keychain, on the Rust side.</p></li>
+</ol>
+
+<h2>Auth</h2>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/steam/login?port={port}</span><span class="tag">Public</span><span class="endpoint-desc">Starts launcher sign-in. Redirects to Steam</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/steam/callback</span><span class="tag">Public</span><span class="endpoint-desc">Steam returns here. Verifies, finds or creates the player, redirects to the launcher's loopback port with a code</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/web/login?returnTo={path}</span><span class="tag">Public</span><span class="endpoint-desc">Starts dashboard sign-in</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/web/callback</span><span class="tag">Public</span><span class="endpoint-desc">Sets the HttpOnly session cookie and redirects back to the dashboard</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/auth/exchange</span><span class="tag">Public</span><span class="endpoint-desc">Trades a one-time code for a session token</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/me</span><span class="tag">Player</span><span class="endpoint-desc">You: id, name, avatar, rating, division, admin flag, and derived stats (matches, win rate, K/D, damage per round)</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/auth/logout</span><span class="tag">Player</span><span class="endpoint-desc">Ends the current session</span></div>
+</div>
+
+<h2>Public</h2>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/news</span><span class="endpoint-desc">The news feed every launcher reads. Posts are live the moment they are saved</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/news/categories</span><span class="endpoint-desc">Allowed categories as <code>{ slug, label }</code>: <code>patch</code>, <code>update</code>, <code>event</code></span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/leaderboard</span><span class="endpoint-desc">Ranked players with rating and division</span></div>
+</div>
+
+<h2>Queue</h2>
+
+<p>All <span class="tag">Player</span>. The queue holds parties, so the leader's join puts the whole party in it.
+Accepting and voting stay personal.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/queue</span><span class="endpoint-desc">Where you are, in one shape for every phase (below)</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/queue</span><span class="endpoint-desc">Join, with <code>{ "mode": "Competitive" | "Wingman" }</code>. Leader only. <code>409</code> if the party is too big for the mode, already queued, or anyone is in a match</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/queue</span><span class="endpoint-desc">Leave the queue</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/queue/accept</span><span class="endpoint-desc">Accept the match you were offered</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/queue/decline</span><span class="endpoint-desc">Decline it, which cancels it for everyone</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/queue/vote</span><span class="endpoint-desc">Vote for a map, with <code>{ "map": "de_mirage" }</code></span></div>
+</div>
+
+<pre data-lang="json" data-title="GET /api/queue">
+{
+  "phase": "vote",              // idle | searching | found | vote | connecting | live
+  "mode": "Competitive",
+  "since": "2026-10-10T19:04:12Z", // when this phase began; the launcher counts up from it
+  "matchId": 27,
+  "accepted": 10,
+  "needed": 10,
+  "youAccepted": true,
+  "yourVote": "de_mirage",
+  "map": null,                  // once the vote is settled
+  "connect": null,              // host:port, once there is a server
+  "connectPassword": null,
+  "votes": { "de_mirage": 4, "de_inferno": 3 }
+}
+</pre>
+
+<h2>Party</h2>
+
+<p>All <span class="tag">Player</span>. Rules and reasoning are in <a href="parties.html#the-party-api">Matchmaking &amp;
+parties</a>.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/party</span><span class="endpoint-desc">Your party, its members, and your invites</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party</span><span class="endpoint-desc">Create one. Usually implicit, since inviting creates it</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party/invite/{playerId}</span><span class="endpoint-desc">Leader only. The invitee must be a friend. At most ten pending invites</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party/invites/{partyId}/accept</span><span class="endpoint-desc">Accept an invite. Refused if the party is already a full team</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/party/invites/{partyId}?playerId={id}</span><span class="endpoint-desc">Decline an invite sent to you, or (leader, with <code>playerId</code>) cancel one you sent</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/party/members/{playerId}</span><span class="endpoint-desc">Leave (your own id) or kick (leader)</span></div>
+</div>
+
+<h2>Friends and social</h2>
+
+<p>All <span class="tag">Player</span>.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/social/state</span><span class="endpoint-desc">Friends, requests, party and invites in one response, with an ETag. Polled every 5s while focused; unchanged state answers <code>304</code></span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/friends</span><span class="endpoint-desc">Your friends with name, avatar and rating</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/friends/requests</span><span class="endpoint-desc">Pending requests, incoming and outgoing</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/friends/search?q={name}</span><span class="endpoint-desc">Find players to add</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/friends/requests/{playerId}</span><span class="endpoint-desc">Send a friend request</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/friends/requests/{playerId}/accept</span><span class="endpoint-desc">Accept one</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/friends/requests/{playerId}</span><span class="endpoint-desc">Decline an incoming request or cancel an outgoing one</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/friends/{playerId}</span><span class="endpoint-desc">Remove a friend</span></div>
+</div>
+
+<h2>Matches</h2>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/matches</span><span class="tag">Player</span><span class="endpoint-desc">Your match history: result (<code>W</code>, <code>L</code> or <code>D</code>), score from your side, K/D, damage per round and rating delta</span></div>
+</div>
+
+<h2>Admin: servers</h2>
+
+<p>All <span class="tag">Admin</span>. The API never hands a secret back: responses say whether an RCON or game
+password is stored (<code>hasRcon</code>, <code>hasGamePassword</code>), never what it is.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/admin/servers</span><span class="endpoint-desc">The pool: status, current match, last seen</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/admin/servers</span><span class="endpoint-desc">Register a server. The RCON password is encrypted at rest</span></div>
+  <div class="endpoint"><span class="method method-patch">PATCH</span><span class="endpoint-path">/api/admin/servers/{id}</span><span class="endpoint-desc">Edit any field; omitted fields are left as they are. <code>409</code> while the server is in a match</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/admin/servers/{id}</span><span class="endpoint-desc">Remove a server from the pool</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/admin/servers/{id}/token</span><span class="endpoint-desc">Rotate the server token, when the old one is lost or should stop working</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/admin/servers/{id}/start-match</span><span class="endpoint-desc">Point this server at a match by hand, with <code>{ "matchId": 27 }</code></span></div>
+</div>
+
+<pre data-lang="json" data-title="POST /api/admin/servers">
+{
+  "name": "EU #1",
+  "region": "eu-west",
+  "type": "Competitive",        // Competitive (5v5) or Wingman (2v2)
+  "host": "203.0.113.10",
+  "port": 27015,
+  "rconPassword": "…",
+  "gamePassword": null,
+  "isEnabled": true
+}
+</pre>
+
+<h2>Admin: news</h2>
+
+<p>All <span class="tag">Admin</span>. There is no admin GET on purpose: the dashboard reads the public
+<code>/api/news</code>, so it can never show something the launcher would not.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/admin/news</span><span class="endpoint-desc">Publish a post. Its id is a slug made from the title</span></div>
+  <div class="endpoint"><span class="method method-patch">PATCH</span><span class="endpoint-path">/api/admin/news/{id}</span><span class="endpoint-desc">Edit one. The id stays put when the title is corrected</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/admin/news/{id}</span><span class="endpoint-desc">Remove one</span></div>
+</div>
+
+<pre data-lang="json" data-title="POST /api/admin/news">
+{
+  "category": "patch",
+  "title": "Parties are here",
+  "excerpt": "Queue with up to four friends.",
+  "body": ["First paragraph.", "Second paragraph."],
+  "date": "2026-10-03",
+  "badge": "v0.1"
+}
+</pre>
+
+<h2>Game servers</h2>
+
+<p>Called by CS2 servers, never by people. Nothing here accepts a player session: a person should never be
+able to speak as a server, and a server has no business reading a player's data. See
+<a href="matchzy.html">MatchZy integration</a> for payloads.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/matches/{id}/config</span><span class="tag">Match</span><span class="endpoint-desc">The match in MatchZy's config format: roster by Steam64 ID, voted map, and where to report</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/matches/events</span><span class="tag">Server or Match</span><span class="endpoint-desc">Every MatchZy event. Idempotent: a repeated <code>series_end</code> changes nothing</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/servers/heartbeat</span><span class="tag">Server</span><span class="endpoint-desc">"Still here", about every 30 seconds. Brings an Offline server back to Idle. Returns <code>{ status, matchId }</code></span></div>
+</div>
+
+<aside class="callout callout-note"><div>
+  <p>Both match endpoints check that the server asking is the one the match was given to. Without that, any
+  registered server could read another match's roster or report a result for a game it never hosted.</p>
+</div></aside>

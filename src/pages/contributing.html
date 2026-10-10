@@ -1,0 +1,157 @@
+<!-- {
+  "title": "Contributing",
+  "lead": "A small project with a few strong opinions, all in one place so you do not have to guess them from a review.",
+  "description": "How to contribute to FLICKED: before you write code, setup, tests against real Postgres, style, commits, pull requests and security.",
+  "source": "CONTRIBUTING.md"
+} -->
+<blockquote><p><strong>The short version:</strong> anything that changes behaviour comes with a test, comments explain
+<em>why</em> rather than <em>what</em>, and a pull request says what you actually verified.</p></blockquote>
+
+<h2>Before you write code</h2>
+
+<p><strong>Open an issue first for anything substantial.</strong> A bug fix or small improvement can arrive as a
+pull request. A new feature, a schema change, or anything touching matchmaking is worth discussing first,
+because a lot of design reasoning lives in the docs and it is a shame to find out after you have written
+it.</p>
+
+<table>
+  <thead><tr><th>If you are touching</th><th>Read first</th></tr></thead>
+  <tbody>
+    <tr><td>Anything at all</td><td><a href="architecture.html">Architecture</a></td></tr>
+    <tr><td>Matchmaking, queue, parties</td><td><a href="parties.html">Matchmaking &amp; parties</a></td></tr>
+    <tr><td>Ratings, stats, the leaderboard</td><td><a href="rating.html">Rating</a></td></tr>
+    <tr><td>Anything the CS2 server sends</td><td><a href="matchzy.html">MatchZy integration</a></td></tr>
+    <tr><td>The website or launcher UI</td><td><a href="design.html">Design system</a></td></tr>
+    <tr><td>Deployment and configuration</td><td><a href="deploy-windows.html">Windows</a> · <a href="deploy-linux.html">Linux</a> · <a href="configuration.html">Configuration</a></td></tr>
+  </tbody>
+</table>
+
+<p><strong>Looking for something to do?</strong> The <a href="roadmap.html#known-gaps">known gaps</a> are an honest list
+of what is wrong today.</p>
+
+<h2>Getting set up</h2>
+
+<p>You need Docker, the .NET 10 SDK, Node.js and, for the launcher, Rust. The
+<a href="quickstart.html">Quickstart</a> walks through it.</p>
+
+<pre data-lang="bash" data-title="Terminal">
+docker compose up -d                  # PostgreSQL
+cd backend/Flicked.Api && dotnet run  # API on http://localhost:5165
+cd launcher && npm install && npm run tauri dev
+</pre>
+
+<h2>Tests</h2>
+
+<pre data-lang="bash" data-title="Terminal">
+dotnet test backend
+</pre>
+
+<p>About 70 tests in roughly 30 seconds. They need <strong>Docker running</strong>, because they run against a
+real PostgreSQL database, <code>flicked_test</code>, which the fixture creates and migrates itself.</p>
+
+<h3>Why real Postgres and not an in-memory provider</h3>
+
+<p>Because the most important things in this codebase are races, and an in-memory provider cannot express
+them:</p>
+
+<ul>
+  <li>the server pool hands out servers with <code>FOR UPDATE SKIP LOCKED</code>, so two matches filling at the
+  same instant get different servers;</li>
+  <li>two party invites accepted simultaneously are resolved by a unique index refusing the second insert;</li>
+  <li>a match is finished by a conditional <code>UPDATE</code>, so a duplicate <code>series_end</code>, which the plugin
+  genuinely sends, changes nothing the second time.</li>
+</ul>
+
+<p>A test suite that cannot fail on any of those is decoration.</p>
+
+<h3>When a test is expected</h3>
+
+<blockquote><p>If your change could break in a way a human would only notice during a match, write the test that
+notices it first.</p></blockquote>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <p class="flex items-center gap-2 text-[14.5px] font-semibold text-foreground"><span class="text-primary-light">{{icon:check:size-4}}</span>Needs a test</p>
+    <p class="mt-2 text-[13.5px] leading-relaxed">New endpoints; changes to matchmaking, rating or the pool; anything concurrent; anything parsing what the CS2 server sends; every bug fix (failing before, passing after).</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <p class="flex items-center gap-2 text-[14.5px] font-semibold text-foreground"><span class="text-subtle">{{icon:x:size-4}}</span>Does not</p>
+    <p class="mt-2 text-[13.5px] leading-relaxed">Documentation, copy changes, styling, and pure refactors where existing tests already cover the behaviour.</p>
+  </div>
+</div>
+
+<p><strong>Write the test at the level the bug lives.</strong> Most of the suite tests services against a real
+database, because that is where the logic is. For arithmetic, a pure unit test is better: see
+<code>RatingTests.cs</code>.</p>
+
+<h3>The other checks</h3>
+
+<pre data-lang="bash" data-title="Terminal">
+cd launcher && npx tsc --noEmit        # launcher types
+cd launcher/src-tauri && cargo check   # launcher Rust
+cd website   && npx next build         # website builds
+cd dashboard && npx next build         # dashboard builds
+</pre>
+
+<aside class="callout callout-tip"><div>
+  <p><code>cargo check</code> occasionally reports <code>Finished</code> without recompiling anything. If it returns
+  suspiciously fast after a real edit, make it prove itself with <code>cargo clean -p launcher &amp;&amp; cargo
+  check</code>.</p>
+</div></aside>
+
+<h2>Style</h2>
+
+<p><strong>Comments explain why, not what.</strong> This is the one thing most likely to come up in review. The code
+says what it does; a comment earns its place by explaining a decision, a trade-off, or a trap.</p>
+
+<pre data-lang="csharp" data-title="Example">
+// Bad: restates the code
+// loop over the players and set their team
+
+/* Good: explains the decision
+   Parties are placed whole rather than drafted player by player, because the
+   entire point of a party is landing on the same side. */
+</pre>
+
+<p>Read a few files near yours before writing, and match their density and voice. Naming and formatting follow
+whatever the surrounding file does; there is no separate style guide to memorise.</p>
+
+<h2>Commits and pull requests</h2>
+
+<p><strong>Conventional commits</strong>, with a scope:</p>
+
+<pre data-lang="text" data-title="git log">
+feat(backend): the queue holds parties
+fix(launcher): one build-time API address, not two
+docs(roadmap): describe what shipped, and what is still wrong
+test(backend): the rating maths, its edges, and the same match twice
+</pre>
+
+<p><strong>In the pull request, say what you verified</strong>, something like:</p>
+
+<blockquote><p>Ran <code>dotnet test backend</code>, 70 passed. Checked <code>cargo check</code> and <code>tsc</code>. Did not test
+against a real CS2 server.</p></blockquote>
+
+<p>That last line is the important one. <strong>Never say something ran when it did not.</strong> "I could not test
+this part" is useful information; a confident claim that turns out false costs the next person hours.
+Unverified work is welcome; it just has to be labelled.</p>
+
+<p><strong>Keep a pull request to one concern.</strong> If you fixed a bug and noticed three other things, that is
+four pull requests, or one plus an issue.</p>
+
+<h2>Security</h2>
+
+<ul>
+  <li><strong>Never commit secrets.</strong> <code>.env</code> is gitignored. If you think you committed a credential,
+  say so immediately: the fix is to rotate it, not to hide the commit.</li>
+  <li><strong>Do not open a public issue for a vulnerability.</strong> Contact the maintainer privately first.</li>
+</ul>
+
+<p>See <a href="security.html">Security</a> for what self-hosting over HTTP costs, and why changes that make the
+secure path easier are very welcome.</p>
+
+<h2>Licensing</h2>
+
+<p>FLICKED is <a href="https://github.com/flickedgg/FLICKED/blob/main/LICENSE">MIT licensed</a>. By contributing, you
+agree your work is released under the same licence. If you port code from elsewhere, say where it came from
+and under what licence: FLICKED builds on other people's work and intends to credit it properly.</p>

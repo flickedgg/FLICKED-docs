@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API reference · FLICKED Docs</title>
+  <meta name="description" content="FLICKED backend HTTP API: authentication, public endpoints, player endpoints for queue, party and friends, admin endpoints, and the endpoints CS2 servers call.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="API reference · FLICKED Docs">
+  <meta property="og:description" content="FLICKED backend HTTP API: authentication, public endpoints, player endpoints for queue, party and friends, admin endpoints, and the endpoints CS2 servers call.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html" aria-current="page">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html" aria-current="page">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">Reference</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">API reference</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">Every HTTP endpoint the backend exposes, grouped by who calls it. The launcher, the dashboard and CS2 servers each authenticate differently, and no endpoint accepts more than one kind of caller.</p>
+          </header>
+        <div class="prose-docs">
+<p>The API serves on <code>http://localhost:5165</code> in development. In the Development environment an OpenAPI
+document is mapped as well. Request and response bodies are JSON with camelCase properties.</p>
+
+<h2 id="authentication">Authentication<a class="anchor" href="#authentication" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Caller</th><th>Sends</th><th>Resolved by</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag"><span class="dot bg-primary-light"></span>Player</span></td><td><code>Authorization: Bearer &lt;token&gt;</code> from the launcher</td><td><code>CurrentPlayer</code></td></tr>
+    <tr><td><span class="tag"><span class="dot bg-warning"></span>Admin</span></td><td>The <code>flicked.session</code> HttpOnly cookie from the dashboard, for a player listed in <code>FLICKED_ADMIN_STEAM_IDS</code></td><td><code>CurrentPlayer</code> + <code>Admins</code></td></tr>
+    <tr><td><span class="tag"><span class="dot bg-slate"></span>Server</span></td><td><code>X-Server-Token</code>, issued when an admin registers the server</td><td><code>ServerAuth</code></td></tr>
+    <tr><td><span class="tag"><span class="dot bg-slate"></span>Match</span></td><td><code>X-Match-Token</code>, minted per match and sent to the server over RCON</td><td>Compared against <code>Matches.ConfigTokenHash</code></td></tr>
+  </tbody>
+</table></div>
+
+<p>Player endpoints accept either a bearer token or the cookie, since both resolve to the same
+<code>Sessions</code> row. Every action works on the signed-in player: there is no "on behalf of" anywhere, so
+the launcher cannot queue, accept or vote for somebody else. All tokens are stored as SHA-256 hashes.</p>
+
+<h3 id="getting-a-launcher-token">Getting a launcher token<a class="anchor" href="#getting-a-launcher-token" aria-label="Link to this section">#</a></h3>
+
+<ol class="steps">
+  <li><strong>Open the sign-in page</strong>
+  <p>The launcher listens on a free loopback port and opens <code>/auth/steam/login?port=&lt;port&gt;</code> in the
+  system browser.</p></li>
+  <li><strong>Steam verifies the player</strong>
+  <p>The backend checks the assertion with Steam server to server, then redirects to
+  <code>127.0.0.1:&lt;port&gt;?code=…</code> with a single-use code that expires in two minutes.</p></li>
+  <li><strong>Exchange the code</strong>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">POST /auth/exchange</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-json"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;…&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">200 OK</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;token&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;expiresAt&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2026-11-09T18:00:00Z&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;playerId&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">12</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Nyx&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;steamId&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;76561198000000000&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;avatarUrl&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://avatars.steamstatic.com/…&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+  <p>The token is shown once. The launcher keeps it in the OS keychain, on the Rust side.</p></li>
+</ol>
+
+<h2 id="auth">Auth<a class="anchor" href="#auth" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/steam/login?port={port}</span><span class="tag">Public</span><span class="endpoint-desc">Starts launcher sign-in. Redirects to Steam</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/steam/callback</span><span class="tag">Public</span><span class="endpoint-desc">Steam returns here. Verifies, finds or creates the player, redirects to the launcher's loopback port with a code</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/web/login?returnTo={path}</span><span class="tag">Public</span><span class="endpoint-desc">Starts dashboard sign-in</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/web/callback</span><span class="tag">Public</span><span class="endpoint-desc">Sets the HttpOnly session cookie and redirects back to the dashboard</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/auth/exchange</span><span class="tag">Public</span><span class="endpoint-desc">Trades a one-time code for a session token</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/auth/me</span><span class="tag">Player</span><span class="endpoint-desc">You: id, name, avatar, rating, division, admin flag, and derived stats (matches, win rate, K/D, damage per round)</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/auth/logout</span><span class="tag">Player</span><span class="endpoint-desc">Ends the current session</span></div>
+</div>
+
+<h2 id="public">Public<a class="anchor" href="#public" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/news</span><span class="endpoint-desc">The news feed every launcher reads. Posts are live the moment they are saved</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/news/categories</span><span class="endpoint-desc">Allowed categories as <code>{ slug, label }</code>: <code>patch</code>, <code>update</code>, <code>event</code></span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/leaderboard</span><span class="endpoint-desc">Ranked players with rating and division</span></div>
+</div>
+
+<h2 id="queue">Queue<a class="anchor" href="#queue" aria-label="Link to this section">#</a></h2>
+
+<p>All <span class="tag">Player</span>. The queue holds parties, so the leader's join puts the whole party in it.
+Accepting and voting stay personal.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/queue</span><span class="endpoint-desc">Where you are, in one shape for every phase (below)</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/queue</span><span class="endpoint-desc">Join, with <code>{ "mode": "Competitive" | "Wingman" }</code>. Leader only. <code>409</code> if the party is too big for the mode, already queued, or anyone is in a match</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/queue</span><span class="endpoint-desc">Leave the queue</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/queue/accept</span><span class="endpoint-desc">Accept the match you were offered</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/queue/decline</span><span class="endpoint-desc">Decline it, which cancels it for everyone</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/queue/vote</span><span class="endpoint-desc">Vote for a map, with <code>{ "map": "de_mirage" }</code></span></div>
+</div>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">GET /api/queue</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;phase&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;vote&quot;</span><span class="hljs-punctuation">,</span>              <span class="hljs-comment">// idle | searching | found | vote | connecting | live</span>
+  <span class="hljs-attr">&quot;mode&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Competitive&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;since&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2026-10-10T19:04:12Z&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-comment">// when this phase began; the launcher counts up from it</span>
+  <span class="hljs-attr">&quot;matchId&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">27</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;accepted&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">10</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;needed&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">10</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;youAccepted&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;yourVote&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;de_mirage&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;map&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">,</span>                  <span class="hljs-comment">// once the vote is settled</span>
+  <span class="hljs-attr">&quot;connect&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">,</span>              <span class="hljs-comment">// host:port, once there is a server</span>
+  <span class="hljs-attr">&quot;connectPassword&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;votes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;de_mirage&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">4</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;de_inferno&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+
+<h2 id="party">Party<a class="anchor" href="#party" aria-label="Link to this section">#</a></h2>
+
+<p>All <span class="tag">Player</span>. Rules and reasoning are in <a href="parties.html#the-party-api">Matchmaking &amp;
+parties</a>.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/party</span><span class="endpoint-desc">Your party, its members, and your invites</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party</span><span class="endpoint-desc">Create one. Usually implicit, since inviting creates it</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party/invite/{playerId}</span><span class="endpoint-desc">Leader only. The invitee must be a friend. At most ten pending invites</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party/invites/{partyId}/accept</span><span class="endpoint-desc">Accept an invite. Refused if the party is already a full team</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/party/invites/{partyId}?playerId={id}</span><span class="endpoint-desc">Decline an invite sent to you, or (leader, with <code>playerId</code>) cancel one you sent</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/party/members/{playerId}</span><span class="endpoint-desc">Leave (your own id) or kick (leader)</span></div>
+</div>
+
+<h2 id="friends-and-social">Friends and social<a class="anchor" href="#friends-and-social" aria-label="Link to this section">#</a></h2>
+
+<p>All <span class="tag">Player</span>.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/social/state</span><span class="endpoint-desc">Friends, requests, party and invites in one response, with an ETag. Polled every 5s while focused; unchanged state answers <code>304</code></span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/friends</span><span class="endpoint-desc">Your friends with name, avatar and rating</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/friends/requests</span><span class="endpoint-desc">Pending requests, incoming and outgoing</span></div>
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/friends/search?q={name}</span><span class="endpoint-desc">Find players to add</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/friends/requests/{playerId}</span><span class="endpoint-desc">Send a friend request</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/friends/requests/{playerId}/accept</span><span class="endpoint-desc">Accept one</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/friends/requests/{playerId}</span><span class="endpoint-desc">Decline an incoming request or cancel an outgoing one</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/friends/{playerId}</span><span class="endpoint-desc">Remove a friend</span></div>
+</div>
+
+<h2 id="matches">Matches<a class="anchor" href="#matches" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/matches</span><span class="tag">Player</span><span class="endpoint-desc">Your match history: result (<code>W</code>, <code>L</code> or <code>D</code>), score from your side, K/D, damage per round and rating delta</span></div>
+</div>
+
+<h2 id="admin-servers">Admin: servers<a class="anchor" href="#admin-servers" aria-label="Link to this section">#</a></h2>
+
+<p>All <span class="tag">Admin</span>. The API never hands a secret back: responses say whether an RCON or game
+password is stored (<code>hasRcon</code>, <code>hasGamePassword</code>), never what it is.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/admin/servers</span><span class="endpoint-desc">The pool: status, current match, last seen</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/admin/servers</span><span class="endpoint-desc">Register a server. The RCON password is encrypted at rest</span></div>
+  <div class="endpoint"><span class="method method-patch">PATCH</span><span class="endpoint-path">/api/admin/servers/{id}</span><span class="endpoint-desc">Edit any field; omitted fields are left as they are. <code>409</code> while the server is in a match</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/admin/servers/{id}</span><span class="endpoint-desc">Remove a server from the pool</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/admin/servers/{id}/token</span><span class="endpoint-desc">Rotate the server token, when the old one is lost or should stop working</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/admin/servers/{id}/start-match</span><span class="endpoint-desc">Point this server at a match by hand, with <code>{ "matchId": 27 }</code></span></div>
+</div>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">POST /api/admin/servers</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;EU #1&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;region&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;eu-west&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Competitive&quot;</span><span class="hljs-punctuation">,</span>        <span class="hljs-comment">// Competitive (5v5) or Wingman (2v2)</span>
+  <span class="hljs-attr">&quot;host&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;203.0.113.10&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;port&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">27015</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;rconPassword&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;gamePassword&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;isEnabled&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+
+<h2 id="admin-news">Admin: news<a class="anchor" href="#admin-news" aria-label="Link to this section">#</a></h2>
+
+<p>All <span class="tag">Admin</span>. There is no admin GET on purpose: the dashboard reads the public
+<code>/api/news</code>, so it can never show something the launcher would not.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/admin/news</span><span class="endpoint-desc">Publish a post. Its id is a slug made from the title</span></div>
+  <div class="endpoint"><span class="method method-patch">PATCH</span><span class="endpoint-path">/api/admin/news/{id}</span><span class="endpoint-desc">Edit one. The id stays put when the title is corrected</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/admin/news/{id}</span><span class="endpoint-desc">Remove one</span></div>
+</div>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">POST /api/admin/news</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;category&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;patch&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;title&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Parties are here&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;excerpt&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Queue with up to four friends.&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;body&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;First paragraph.&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;Second paragraph.&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;date&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2026-10-03&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;badge&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;v0.1&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+
+<h2 id="game-servers">Game servers<a class="anchor" href="#game-servers" aria-label="Link to this section">#</a></h2>
+
+<p>Called by CS2 servers, never by people. Nothing here accepts a player session: a person should never be
+able to speak as a server, and a server has no business reading a player's data. See
+<a href="matchzy.html">MatchZy integration</a> for payloads.</p>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/matches/{id}/config</span><span class="tag">Match</span><span class="endpoint-desc">The match in MatchZy's config format: roster by Steam64 ID, voted map, and where to report</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/matches/events</span><span class="tag">Server or Match</span><span class="endpoint-desc">Every MatchZy event. Idempotent: a repeated <code>series_end</code> changes nothing</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/servers/heartbeat</span><span class="tag">Server</span><span class="endpoint-desc">"Still here", about every 30 seconds. Brings an Offline server back to Idle. Returns <code>{ status, matchId }</code></span></div>
+</div>
+
+<aside class="callout callout-note"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div>
+  <p>Both match endpoints check that the server asking is the one the match was given to. Without that, any
+  registered server could read another match's roster or report a result for a game it never hosted.</p>
+</div></aside>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="matchzy.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">MatchZy integration</span>
+          </a>
+          <a href="design.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] items-end text-right sm:col-start-2">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Next<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Design system</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#authentication">Authentication</a>
+          <a class="toc-link toc-sub" href="#getting-a-launcher-token">Getting a launcher token</a>
+          <a class="toc-link" href="#auth">Auth</a>
+          <a class="toc-link" href="#public">Public</a>
+          <a class="toc-link" href="#queue">Queue</a>
+          <a class="toc-link" href="#party">Party</a>
+          <a class="toc-link" href="#friends-and-social">Friends and social</a>
+          <a class="toc-link" href="#matches">Matches</a>
+          <a class="toc-link" href="#admin-servers">Admin: servers</a>
+          <a class="toc-link" href="#admin-news">Admin: news</a>
+          <a class="toc-link" href="#game-servers">Game servers</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/backend/Flicked.Api/Controllers" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

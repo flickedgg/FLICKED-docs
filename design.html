@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design system · FLICKED Docs</title>
+  <meta name="description" content="FLICKED's design system: principles, colour tokens, contrast, typography, spacing, components, motion, writing rules and Tailwind tokens.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Design system · FLICKED Docs">
+  <meta property="og:description" content="FLICKED's design system: principles, colour tokens, contrast, typography, spacing, components, motion, writing rules and Tailwind tokens.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html" aria-current="page">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html" aria-current="page">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">Reference</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">Design system</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">The visual language for everything FLICKED ships: the website, the launcher, the dashboard, and these docs. Dark, neutral, lots of space, and one accent.</p>
+          </header>
+        <div class="prose-docs">
+<p>The website is the reference implementation, and its tokens live in <code>website/app/globals.css</code>.
+This site uses the same tokens.</p>
+
+<h2 id="principles">Principles<a class="anchor" href="#principles" aria-label="Link to this section">#</a></h2>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <div class="card"><p class="card-title">Clean and quiet</p><p class="card-text">Dark, neutral, lots of space. The calm of a Valve product page, not a gaming RGB setup.</p></div>
+  <div class="card"><p class="card-title">One accent</p><p class="card-text">Orange is the only saturated colour. If everything is orange, nothing is.</p></div>
+  <div class="card"><p class="card-title">The product is the picture</p><p class="card-text">Show real UI (scoreboards, queues, server status) instead of decoration. No stock art, no abstract 3D.</p></div>
+  <div class="card"><p class="card-title">Plain words, and honest</p><p class="card-text">Anyone should understand a label without CS jargon. FLICKED is alpha: say so, and never fake numbers.</p></div>
+</div>
+
+<h3 id="tried-and-removed">Tried and removed<a class="anchor" href="#tried-and-removed" aria-label="Link to this section">#</a></h3>
+
+<p>These looked "cool" and made the product feel cheap. Do not bring them back: laser beams and glowing blobs
+behind content, custom crosshair cursors, text scramble effects, italic or skewed headings and buttons,
+animated counters, spotlight-on-hover cards, floating collage hero layouts, and em dashes in copy.</p>
+
+<h2 id="colour">Colour<a class="anchor" href="#colour" aria-label="Link to this section">#</a></h2>
+
+<p>Dark only. There is no light theme.</p>
+
+<h3 id="neutrals">Neutrals<a class="anchor" href="#neutrals" aria-label="Link to this section">#</a></h3>
+
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-bg"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">bg</p><p class="font-mono text-[11.5px] text-subtle">#0c0c0d</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-surface"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">surface</p><p class="font-mono text-[11.5px] text-subtle">#131315</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-elevated"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">elevated</p><p class="font-mono text-[11.5px] text-subtle">#19191c</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-foreground"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">foreground</p><p class="font-mono text-[11.5px] text-subtle">#ffffff</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-muted"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">muted</p><p class="font-mono text-[11.5px] text-subtle">#b4b4b8 · body</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-subtle"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">subtle</p><p class="font-mono text-[11.5px] text-subtle">#8d8d93 · captions</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-faint"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">faint</p><p class="font-mono text-[11.5px] text-subtle">#5a5a60 · decor only</p></div></div>
+</div>
+
+<h3 id="accent-and-status">Accent and status<a class="anchor" href="#accent-and-status" aria-label="Link to this section">#</a></h3>
+
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-primary"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">primary</p><p class="font-mono text-[11.5px] text-subtle">#f65600</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-primary-light"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">primary-light</p><p class="font-mono text-[11.5px] text-subtle">#ff7a33 · text</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-slate"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">slate</p><p class="font-mono text-[11.5px] text-subtle">#7d8aa0 · other team</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-warning"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">warning</p><p class="font-mono text-[11.5px] text-subtle">#e0b341 · pending</p></div></div>
+</div>
+
+<ul>
+  <li><strong><code>primary</code></strong> is sampled from the logo: primary buttons, active states, live dots,
+  progress fills, highlighted heading words.</li>
+  <li><strong><code>primary-light</code></strong> is for orange <em>text</em> on dark: links, positive deltas, the
+  focus ring.</li>
+  <li><strong>Text on an orange button is near-black <code>#0c0c0d</code></strong> (5.8:1), never white (3.4:1).</li>
+</ul>
+
+<h3 id="contrast">Contrast<a class="anchor" href="#contrast" aria-label="Link to this section">#</a></h3>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Text colour</th><th class="num">on bg</th><th class="num">on surface</th><th class="num">on elevated</th></tr></thead>
+  <tbody>
+    <tr><td><code>foreground</code></td><td class="num">19.6</td><td class="num">18.6</td><td class="num">17.5</td></tr>
+    <tr><td><code>muted</code></td><td class="num">9.5</td><td class="num">9.0</td><td class="num">8.5</td></tr>
+    <tr><td><code>subtle</code></td><td class="num">5.9</td><td class="num">5.6</td><td class="num">5.3</td></tr>
+    <tr><td><code>primary-light</code></td><td class="num">7.5</td><td class="num">7.1</td><td class="num">6.8</td></tr>
+    <tr><td><code>primary</code></td><td class="num">5.8</td><td class="num">5.5</td><td class="num">5.2</td></tr>
+    <tr><td><code>slate</code></td><td class="num">5.6</td><td class="num">5.3</td><td class="num">5.0</td></tr>
+    <tr><td><code>faint</code></td><td class="num text-warning">2.9</td><td class="num text-warning">2.7</td><td class="num text-warning">2.6</td></tr>
+  </tbody>
+</table></div>
+
+<p><code>faint</code> fails WCAG for text and is for decoration only: dividers, disabled states, placeholder
+glyphs.</p>
+
+<h2 id="typography">Typography<a class="anchor" href="#typography" aria-label="Link to this section">#</a></h2>
+
+<div class="space-y-3">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-6">
+    <p class="eyebrow">Display · Barlow Condensed 700</p>
+    <p class="display mt-3 text-[3rem] leading-[.92]">Everything a pug night needs. <span class="text-primary">Nothing rented.</span></p>
+    <p class="mt-3 text-[13px] text-subtle">Headings only. Uppercase, upright, tight line height.</p>
+  </div>
+  <div class="grid gap-3 sm:grid-cols-2">
+    <div class="rounded-xl border border-white/[.08] bg-surface p-6">
+      <p class="eyebrow">UI and body · Inter</p>
+      <p class="mt-3 text-[18px] font-semibold tracking-[-0.01em] text-foreground">Card title, sentence case</p>
+      <p class="mt-1 text-[14.5px]">Body text is muted, with lines kept under about sixty characters.</p>
+    </div>
+    <div class="rounded-xl border border-white/[.08] bg-surface p-6">
+      <p class="eyebrow">Data · JetBrains Mono</p>
+      <p class="mt-3 font-mono text-[18px] tabular-nums text-foreground">13 – 9 · 1,482</p>
+      <p class="mt-1 font-mono text-[12px] uppercase tracking-[.12em] text-subtle">Numbers, IDs, logs, labels</p>
+    </div>
+  </div>
+</div>
+
+<ul>
+  <li><strong>Headings are two beats:</strong> a statement in white, then a short payoff in <code>primary</code>.</li>
+  <li><strong>The FLICKED wordmark is the only italic text anywhere</strong>, matching the logo's slant.</li>
+  <li><strong>Numbers that update or line up</strong> use <code>font-variant-numeric: tabular-nums</code>.</li>
+</ul>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th>Size</th><th>Style</th></tr></thead>
+  <tbody>
+    <tr><td>Hero</td><td><code>clamp(3.1rem, 8.5vw, 6rem)</code></td><td>Display, line-height 0.92</td></tr>
+    <tr><td>Section heading</td><td><code>clamp(2.4rem, 4.6vw, 3.7rem)</code></td><td>Display, line-height 0.95</td></tr>
+    <tr><td>Card title</td><td>18px</td><td>Inter 600, <code>-0.01em</code></td></tr>
+    <tr><td>Body large</td><td>16.5 to 17px</td><td>Inter 400, line-height 1.65</td></tr>
+    <tr><td>Body</td><td>14.5px</td><td>Inter 400, <code>muted</code></td></tr>
+    <tr><td>Label (eyebrow)</td><td>12px</td><td>Mono 500, uppercase, <code>.12em</code>, <code>subtle</code></td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="layout-and-shape">Layout and shape<a class="anchor" href="#layout-and-shape" aria-label="Link to this section">#</a></h2>
+
+<p><strong>Base unit 4px.</strong> Common steps: 8, 12, 16, 24, 28, 40, 56, 64, 96. Content max-width 1400px,
+card padding 28px, 14px between cards.</p>
+
+<div class="flex flex-wrap items-end gap-4">
+  <div class="text-center"><div class="size-14 rounded-[4px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">4 · tags</p></div>
+  <div class="text-center"><div class="size-14 rounded-[6px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">6 · buttons</p></div>
+  <div class="text-center"><div class="size-14 rounded-[8px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">8 · wells</p></div>
+  <div class="text-center"><div class="size-14 rounded-[10px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">10 · tiles</p></div>
+  <div class="text-center"><div class="size-14 rounded-[12px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">12 · cards</p></div>
+  <div class="text-center"><div class="size-14 rounded-full border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">999 · dots</p></div>
+</div>
+
+<p><strong>Depth comes from surface colour and borders, not glow.</strong> Shadows are black and soft; coloured
+shadows and glows are off-brand.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Plane</th><th>Background</th><th>Border</th><th>Shadow</th></tr></thead>
+  <tbody>
+    <tr><td>0 · page</td><td><code>bg</code></td><td>none</td><td>none</td></tr>
+    <tr><td>1 · card</td><td><code>surface</code></td><td><code>rgba(255,255,255,.08)</code></td><td>none</td></tr>
+    <tr><td>2 · raised</td><td><code>elevated</code></td><td><code>rgba(255,255,255,.10)</code></td><td><code>0 20px 60px rgba(0,0,0,.5)</code></td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="components">Components<a class="anchor" href="#components" aria-label="Link to this section">#</a></h2>
+
+<h3 id="buttons">Buttons<a class="anchor" href="#buttons" aria-label="Link to this section">#</a></h3>
+
+<div class="flex flex-wrap items-center gap-3 rounded-xl border border-white/[.08] bg-surface p-6">
+  <button type="button" class="btn-primary">Find match</button>
+  <button type="button" class="btn-outline">Report an issue</button>
+</div>
+
+<p>Primary is <code>primary</code> fill with near-black text, hover <code>#ff6414</code>. Outline is transparent
+with a <code>.14</code> border, <code>.28</code> on hover. 42px tall, 6px radius. <strong>One primary button per
+view.</strong></p>
+
+<h3 id="status-tags-and-progress">Status, tags and progress<a class="anchor" href="#status-tags-and-progress" aria-label="Link to this section">#</a></h3>
+
+<div class="flex flex-wrap items-center gap-6 rounded-xl border border-white/[.08] bg-surface p-6 text-[14px]">
+  <span class="flex items-center gap-2 text-foreground"><span class="dot dot-live"></span>Live</span>
+  <span class="flex items-center gap-2 text-foreground"><span class="dot bg-warning"></span>Starting</span>
+  <span class="flex items-center gap-2 text-foreground"><span class="dot bg-faint"></span>Finished</span>
+  <span class="tag"><span class="dot size-1.5 bg-primary"></span>de_mirage</span>
+  <span class="block h-1 w-40 overflow-hidden rounded-full bg-white/[.08]"><span class="block h-full w-3/5 rounded-full bg-primary"></span></span>
+</div>
+
+<p>Status is always a dot <em>plus a word</em>, never colour alone. Progress bars are 4px tall on a
+<code>.08</code> track.</p>
+
+<h3 id="cards">Cards<a class="anchor" href="#cards" aria-label="Link to this section">#</a></h3>
+
+<p><code>surface</code> background, 12px radius, <code>.08</code> border. Inside: a 40px icon tile with an orange
+tint, an 18px title, one sentence, and a small labelled picture of the feature. Hover only brightens the
+border: no lifts, no glows.</p>
+
+<h2 id="icons-and-motion">Icons and motion<a class="anchor" href="#icons-and-motion" aria-label="Link to this section">#</a></h2>
+
+<ul>
+  <li><strong>Icons</strong> are line icons on a 24px grid with a 1.7px stroke, round caps and joins, no fill.
+  <a href="https://lucide.dev">Lucide</a> matches. 20px in a 40px tile; 16px in buttons.</li>
+  <li><strong>Motion</strong> is quiet and never needed to understand the UI: 150 to 250ms for state changes,
+  easing <code>cubic-bezier(.22,.61,.36,1)</code>, and <code>prefers-reduced-motion</code> always respected.</li>
+</ul>
+
+<h2 id="writing">Writing<a class="anchor" href="#writing" aria-label="Link to this section">#</a></h2>
+
+<ul>
+  <li>Plain language. "Damage per round", not "ADR". "Match replays", not "Demos".</li>
+  <li>When a CS term is the right word, keep it and explain it once nearby.</li>
+  <li>No em dashes. Use a full stop, comma or colon.</li>
+  <li>Sentence case for buttons and labels: "Get started", "Report an issue".</li>
+  <li>Be upfront about alpha status and missing features.</li>
+</ul>
+
+<h2 id="the-launcher">The launcher<a class="anchor" href="#the-launcher" aria-label="Link to this section">#</a></h2>
+
+<p>The launcher renders web UI, so the tokens apply directly, at tool density: section padding drops to 24 to
+32px and headings to the h3 size or smaller. A dark custom titlebar with a <code>.06</code> hairline, a left
+sidebar with 36px nav items, and one orange action on screen ("Find match", "Accept", "Connect"). The match
+found dialog is the one place a bigger moment is fine: a plane-2 dialog with the countdown and ten player
+slots, filled orange when accepted.</p>
+
+<h2 id="tokens">Tokens<a class="anchor" href="#tokens" aria-label="Link to this section">#</a></h2>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Tailwind v4 · @theme</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-css"><span class="hljs-keyword">@theme</span> {
+  <span class="hljs-attr">--color-bg</span>: <span class="hljs-number">#0c0c0d</span>;
+  <span class="hljs-attr">--color-surface</span>: <span class="hljs-number">#131315</span>;
+  <span class="hljs-attr">--color-elevated</span>: <span class="hljs-number">#19191c</span>;
+  <span class="hljs-attr">--color-foreground</span>: <span class="hljs-number">#ffffff</span>;
+  <span class="hljs-attr">--color-muted</span>: <span class="hljs-number">#b4b4b8</span>;
+  <span class="hljs-attr">--color-subtle</span>: <span class="hljs-number">#8d8d93</span>;
+  <span class="hljs-attr">--color-faint</span>: <span class="hljs-number">#5a5a60</span>;
+  <span class="hljs-attr">--color-primary</span>: <span class="hljs-number">#f65600</span>;
+  <span class="hljs-attr">--color-primary-light</span>: <span class="hljs-number">#ff7a33</span>;
+  <span class="hljs-attr">--color-slate</span>: <span class="hljs-number">#7d8aa0</span>;
+  <span class="hljs-attr">--shadow-plane2</span>: <span class="hljs-number">0</span> <span class="hljs-number">20px</span> <span class="hljs-number">60px</span> <span class="hljs-built_in">rgba</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0.5</span>);
+}</code></pre></div>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">CSS custom properties</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-css"><span class="hljs-selector-pseudo">:root</span> {
+  <span class="hljs-attr">--line-soft</span>: <span class="hljs-built_in">rgba</span>(<span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">0.05</span>);
+  <span class="hljs-attr">--line</span>: <span class="hljs-built_in">rgba</span>(<span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">0.08</span>);
+  <span class="hljs-attr">--line-strong</span>: <span class="hljs-built_in">rgba</span>(<span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">0.14</span>);
+
+  <span class="hljs-attr">--radius-control</span>: <span class="hljs-number">6px</span>;
+  <span class="hljs-attr">--radius-well</span>: <span class="hljs-number">8px</span>;
+  <span class="hljs-attr">--radius-tile</span>: <span class="hljs-number">10px</span>;
+  <span class="hljs-attr">--radius-card</span>: <span class="hljs-number">12px</span>;
+
+  <span class="hljs-attr">--ease</span>: <span class="hljs-built_in">cubic-bezier</span>(.<span class="hljs-number">22</span>, .<span class="hljs-number">61</span>, .<span class="hljs-number">36</span>, <span class="hljs-number">1</span>);
+
+  <span class="hljs-attr">--font-display</span>: <span class="hljs-string">&quot;Barlow Condensed&quot;</span>, system-ui, sans-serif;
+  <span class="hljs-attr">--font-sans</span>: <span class="hljs-string">&quot;Inter&quot;</span>, system-ui, sans-serif;
+  <span class="hljs-attr">--font-mono</span>: <span class="hljs-string">&quot;JetBrains Mono&quot;</span>, ui-monospace, monospace;
+}</code></pre></div>
+
+<h2 id="brand-assets">Brand assets<a class="anchor" href="#brand-assets" aria-label="Link to this section">#</a></h2>
+
+<div class="flex flex-wrap items-center gap-8 rounded-xl border border-white/[.08] bg-surface p-6">
+  <img src="assets/logo.png" alt="The FLICKED logo: an orange slanted F with a player silhouette" class="h-16 w-auto">
+  <div class="flex items-center gap-2.5"><img src="assets/logo.png" alt="" class="h-[30px] w-auto"><span class="wordmark text-[23px]">FLICKED</span></div>
+</div>
+
+<p>The logo (<code>assests/icon.png</code>) is an orange slanted F with a player silhouette. Do not recolour,
+outline or rotate it; minimum 20px tall. The wordmark is Barlow Condensed 700 italic, white, 23px next to a 30px
+logo.</p>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="api.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">API reference</span>
+          </a>
+          <a href="roadmap.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] items-end text-right sm:col-start-2">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Next<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Roadmap &amp; decisions</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#principles">Principles</a>
+          <a class="toc-link toc-sub" href="#tried-and-removed">Tried and removed</a>
+          <a class="toc-link" href="#colour">Colour</a>
+          <a class="toc-link toc-sub" href="#neutrals">Neutrals</a>
+          <a class="toc-link toc-sub" href="#accent-and-status">Accent and status</a>
+          <a class="toc-link toc-sub" href="#contrast">Contrast</a>
+          <a class="toc-link" href="#typography">Typography</a>
+          <a class="toc-link" href="#layout-and-shape">Layout and shape</a>
+          <a class="toc-link" href="#components">Components</a>
+          <a class="toc-link toc-sub" href="#buttons">Buttons</a>
+          <a class="toc-link toc-sub" href="#status-tags-and-progress">Status, tags and progress</a>
+          <a class="toc-link toc-sub" href="#cards">Cards</a>
+          <a class="toc-link" href="#icons-and-motion">Icons and motion</a>
+          <a class="toc-link" href="#writing">Writing</a>
+          <a class="toc-link" href="#the-launcher">The launcher</a>
+          <a class="toc-link" href="#tokens">Tokens</a>
+          <a class="toc-link" href="#brand-assets">Brand assets</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/docs/DESIGN.md" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

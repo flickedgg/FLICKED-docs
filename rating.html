@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rating · FLICKED Docs</title>
+  <meta name="description" content="FLICKED's rating algorithm: Elo expected score on the match result, a bounded performance modifier, provisional K factor, the rating floor, and exactly-once application.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Rating · FLICKED Docs">
+  <meta property="og:description" content="FLICKED's rating algorithm: Elo expected score on the match result, a bounded performance modifier, provisional K factor, the rating floor, and exactly-once application.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html" aria-current="page">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html" aria-current="page">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">Concepts</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">Rating</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">What a match is worth, and why. An Elo model on the result, plus a bounded correction for how you played inside it.</p>
+          </header>
+        <div class="prose-docs">
+<p>The code is <code>backend/Flicked.Api/Services/Rating.cs</code> (the arithmetic, no database) and
+<code>Services/MatchResults.cs</code> (the one place a result is ever applied). If they disagree with this page,
+the code is right.</p>
+
+<h2 id="the-decision-everything-follows-from">The decision everything follows from<a class="anchor" href="#the-decision-everything-follows-from" aria-label="Link to this section">#</a></h2>
+
+<p><strong>The result is the rating. Performance is a correction to it.</strong></p>
+
+<p>Every ladder that weights statistics heavily ends up measuring statistics. Players optimise what is
+measured: they take the fight that pads a K/D instead of the one that wins the round, they save instead of
+retaking, they farm damage on a lost round rather than trading for the plant. It is why Valve's own rank
+moves on wins and losses.</p>
+
+<p>So the shape is fixed: an Elo expected-score model on the match result, plus a <strong>bounded</strong>
+modifier for how the player did. Performance is capped at a quarter of what the result is worth, and a
+further rule makes it structurally unable to change the sign:</p>
+
+<blockquote><p class="text-[17px]"><strong>A win never loses you rating. A loss never gains you rating.</strong></p></blockquote>
+
+<p>However badly you play, winning moves you up. However well you play, losing moves you down. The modifier
+only decides <em>how far</em>, and that is the property the tests protect.</p>
+
+<h2 id="the-formula">The formula<a class="anchor" href="#the-formula" aria-label="Link to this section">#</a></h2>
+
+<p>For each player in a finished match:</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">per player</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">E      = 1 / (1 + 10^((opponentMean − rating) / 400))
+base   = K × (S − E)
+bonus  = K × 0.25 × perf
+delta  = round(base + bonus), then forced to at least ±1 in the direction of the result
+rating = max(100, rating + delta)</code></pre></div>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Symbol</th><th>Is</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>rating</code></td><td>This player's rating before the match</td><td>New accounts start at 1000</td></tr>
+    <tr><td><code>opponentMean</code></td><td>Mean rating of the <strong>other</strong> team</td><td>Their team, not the whole lobby</td></tr>
+    <tr><td><code>E</code></td><td>Expected score, 0 to 1</td><td>Standard Elo, 400-point scale</td></tr>
+    <tr><td><code>S</code></td><td>1 win, 0 loss, 0.5 draw</td><td>The only thing the player controls as a team</td></tr>
+    <tr><td><code>K</code></td><td>64 sliding to 32 over ten matches</td><td>See <a href="#new-players">New players</a></td></tr>
+    <tr><td><code>perf</code></td><td>−1 to +1, relative to this match</td><td>See <a href="#performance">Performance</a></td></tr>
+  </tbody>
+</table></div>
+
+<h3 id="calculator">Try it<a class="anchor" href="#calculator" aria-label="Link to this section">#</a></h3>
+
+<div class="rounded-xl border border-white/[.08] bg-surface" id="rating-calc">
+  <div class="grid gap-4 p-5 sm:grid-cols-2">
+    <label class="block">
+      <span class="eyebrow">Your rating</span>
+      <input type="number" data-in="rating" value="1000" min="100" step="10" class="mt-2 h-[42px] w-full rounded-md border border-white/10 bg-black/20 px-3 font-mono text-[14px] text-foreground tabular-nums focus:outline-[1.5px] focus:outline-offset-[3px] focus:outline-primary-light">
+    </label>
+    <label class="block">
+      <span class="eyebrow">Opponent team mean</span>
+      <input type="number" data-in="opp" value="1000" min="100" step="10" class="mt-2 h-[42px] w-full rounded-md border border-white/10 bg-black/20 px-3 font-mono text-[14px] text-foreground tabular-nums focus:outline-[1.5px] focus:outline-offset-[3px] focus:outline-primary-light">
+    </label>
+    <label class="block">
+      <span class="eyebrow">Matches played</span>
+      <input type="number" data-in="played" value="10" min="0" step="1" class="mt-2 h-[42px] w-full rounded-md border border-white/10 bg-black/20 px-3 font-mono text-[14px] text-foreground tabular-nums focus:outline-[1.5px] focus:outline-offset-[3px] focus:outline-primary-light">
+    </label>
+    <div>
+      <span class="eyebrow">Result</span>
+      <div class="mt-2 grid h-[42px] grid-cols-3 gap-1 rounded-md border border-white/10 bg-black/20 p-1" role="radiogroup" aria-label="Result">
+        <button type="button" data-result="1" class="rounded text-[13.5px] font-medium text-subtle transition-colors aria-checked:bg-white/[.08] aria-checked:text-foreground" role="radio" aria-checked="true">Win</button>
+        <button type="button" data-result="0.5" class="rounded text-[13.5px] font-medium text-subtle transition-colors aria-checked:bg-white/[.08] aria-checked:text-foreground" role="radio" aria-checked="false">Draw</button>
+        <button type="button" data-result="0" class="rounded text-[13.5px] font-medium text-subtle transition-colors aria-checked:bg-white/[.08] aria-checked:text-foreground" role="radio" aria-checked="false">Loss</button>
+      </div>
+    </div>
+    <label class="block sm:col-span-2">
+      <span class="flex items-center justify-between"><span class="eyebrow">Performance</span><span class="font-mono text-[12px] text-muted tabular-nums" data-out="perfLabel">0.00</span></span>
+      <input type="range" data-in="perf" value="0" min="-1" max="1" step="0.05" class="mt-3 w-full accent-primary">
+      <span class="mt-1 flex justify-between font-mono text-[10.5px] text-subtle"><span>−1 quiet game</span><span>+1 best on the server</span></span>
+    </label>
+  </div>
+  <div class="flex flex-wrap items-end justify-between gap-4 border-t border-white/[.06] bg-black/10 px-5 py-4">
+    <div>
+      <p class="eyebrow">Rating change</p>
+      <p class="mt-1 font-mono text-[2.4rem] leading-none font-medium tabular-nums text-foreground" data-out="delta">+16</p>
+    </div>
+    <dl class="grid grid-cols-4 gap-x-6 gap-y-1 font-mono text-[12px] tabular-nums">
+      <dt class="text-subtle">E</dt><dt class="text-subtle">K</dt><dt class="text-subtle">base</dt><dt class="text-subtle">bonus</dt>
+      <dd class="text-muted" data-out="e">0.50</dd><dd class="text-muted" data-out="k">32</dd><dd class="text-muted" data-out="base">16.0</dd><dd class="text-muted" data-out="bonus">0.0</dd>
+    </dl>
+  </div>
+</div>
+
+<script>
+(() => {
+  const root = document.getElementById("rating-calc");
+  const val = k => Number(root.querySelector(`[data-in="${k}"]`).value) || 0;
+  const out = (k, v) => { root.querySelector(`[data-out="${k}"]`).textContent = v; };
+  let S = 1;
+  const update = () => {
+    const rating = Math.max(100, val("rating")), opp = val("opp"), played = Math.max(0, val("played")), perf = val("perf");
+    const E = 1 / (1 + Math.pow(10, (opp - rating) / 400));
+    const K = 32 * (1 + Math.max(0, 10 - played) / 10);
+    const base = K * (S - E), bonus = K * 0.25 * perf;
+    let delta = Math.round(base + bonus);
+    if (S === 1) delta = Math.max(1, delta);
+    if (S === 0) delta = Math.min(-1, delta);
+    const applied = Math.max(100, rating + delta) - rating;
+    out("delta", (applied > 0 ? "+" : applied < 0 ? "−" : "±") + Math.abs(applied));
+    out("e", E.toFixed(2)); out("k", K.toFixed(K % 1 ? 1 : 0));
+    out("base", base.toFixed(1)); out("bonus", bonus.toFixed(1));
+    out("perfLabel", (perf > 0 ? "+" : "") + perf.toFixed(2));
+    root.querySelector('[data-out="delta"]').classList.toggle("text-primary-light", applied > 0);
+  };
+  root.querySelectorAll("[data-in]").forEach(i => i.addEventListener("input", update));
+  root.querySelectorAll("[data-result]").forEach(b => b.addEventListener("click", () => {
+    S = Number(b.dataset.result);
+    root.querySelectorAll("[data-result]").forEach(x => x.setAttribute("aria-checked", String(x === b)));
+    update();
+  }));
+  update();
+})();
+</script>
+
+<h3 id="why-the-opponent-s-mean-and-not-the-lobby-s">Why the opponent's mean, and not the lobby's<a class="anchor" href="#why-the-opponent-s-mean-and-not-the-lobby-s" aria-label="Link to this section">#</a></h3>
+
+<p><code>E</code> is a claim: <em>this rating says you should beat that team this often</em>. The evidence for or
+against it is the other team. Your own teammates' ratings are not evidence about you, so they do not
+appear.</p>
+
+<p>Team mean against team mean would be tidier and exactly zero-sum, but it rates a 2000-rated player
+carried by four 1000s as if they were a 1200 player. With per-player expectation the strongest player in a
+lopsided team gains least for winning and loses most for losing, which is the right direction. The cost is
+that the system is <strong>not exactly zero-sum</strong>: total rating drifts slightly when teams are
+uneven, which is invisible next to the noise on an instance with a few dozen players.</p>
+
+<h3 id="why-elo-and-not-glicko-or-trueskill">Why Elo and not Glicko or TrueSkill<a class="anchor" href="#why-elo-and-not-glicko-or-trueskill" aria-label="Link to this section">#</a></h3>
+
+<p>Glicko's rating deviation and TrueSkill's σ are the right answer when there is enough data to estimate
+them. On an instance with twenty players, RD barely leaves its initial value, and the machinery costs two
+extra columns, a migration, a time decay loop, and a number nobody can explain when they ask why they lost
+14 points.</p>
+
+<p>The uncertainty that matters here, <em>this account is new and we have no idea how good they are</em>, is
+captured by the K factor in one line. When there is enough data, the base term is a drop-in replacement:
+<code>E</code> and <code>S</code> stay as they are, and only <code>K</code> becomes a function of two deviations.</p>
+
+<h2 id="performance">Performance<a class="anchor" href="#performance" aria-label="Link to this section">#</a></h2>
+
+<p><code>perf</code> answers one question: <strong>relative to the other people in this match, how did this
+player do?</strong> Not "how good is this K/D". Relative, always, and to this match only.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">performance</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">rounds     = scoreA + scoreB
+duel_i     = (kills_i − deaths_i) / rounds
+perf_i     = clamp( 0.5 × (duel_i − mean(duel)) / 0.25
+                  + 0.5 × (adr_i  − mean(adr))  / 25 , −1, +1 )</code></pre></div>
+
+<ul>
+  <li><strong>Duelling</strong>: net kills per round against the match average. A quarter-kill per round
+  better than everybody else, about six net kills over 24 rounds, is a standout game and scores the full
+  half.</li>
+  <li><strong>Damage</strong>: damage per round against the match average. 25 clear of the field is the same
+  kind of standout, and it credits the player who does the opening damage somebody else converts.</li>
+</ul>
+
+<p>Measuring against the match's own average makes it immune to match length, to a stomp where everyone's
+figures are inflated, and to a patch that changes weapon damage. A player cannot improve their
+<code>perf</code> by picking easier opponents, because everyone is scored against the people who were
+there.</p>
+
+<p><strong>Why a fixed reference and not the standard deviation.</strong> A z-score would be wrong here: in a
+1v1 test match the deviation is whatever the gap between two players happens to be, and every 1v1 would end
+with both at ±1. Fixed references keep a close game close.</p>
+
+<p><strong>What it is worth.</strong> <code>K × 0.25</code>, so ±8 for an established player and ±16 for a brand
+new one. Against a base term of ±32 (±64 provisional), the best game anyone has ever played is worth a
+quarter of the result.</p>
+
+<aside class="callout callout-note"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div>
+  <p><strong>When performance is skipped.</strong> With fewer than five rounds reported, <code>perf</code> is 0
+  for everybody and rating is decided on the result alone. That covers a match abandoned early, and the
+  degraded path where only <code>series_end</code> arrived. Stats come from <code>round_end</code>, because
+  MatchZy sends an empty players array in <code>map_result</code> (see <a href="matchzy.html#map-result-sends-no-player-stats">MatchZy</a>).
+  If no stats ever arrive, everything degrades cleanly to plain Elo.</p>
+</div></aside>
+
+<h2 id="new-players">New players<a class="anchor" href="#new-players" aria-label="Link to this section">#</a></h2>
+
+<p><code>K</code> starts at 64 and slides linearly to 32 over the first ten matches:</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">k factor</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">K = 32 × (1 + max(0, 10 − matchesPlayed) / 10)</code></pre></div>
+
+<div class="table-wrap"><table>
+  <thead><tr><th class="num">Matches played</th><th class="num">K</th><th class="num">A coin-flip win is worth</th></tr></thead>
+  <tbody>
+    <tr><td class="num">0</td><td class="num">64</td><td class="num">+32</td></tr>
+    <tr><td class="num">5</td><td class="num">48</td><td class="num">+24</td></tr>
+    <tr><td class="num">10 or more</td><td class="num">32</td><td class="num">+16</td></tr>
+  </tbody>
+</table></div>
+
+<p>A new account's 1000 is a guess, so it should move fast; a veteran's 2400 is the sum of hundreds of
+matches, so it should not. Ten matches gets a genuinely strong player out of the wrong bracket within an
+evening, without one good night minting a Division I player. <code>matchesPlayed</code> is
+<code>Wins + Losses</code>, so there is no separate counter to drift.</p>
+
+<p>The launcher's leaderboard tags provisional players, because a rating built from two matches next to one
+built from three hundred is worth an asterisk.</p>
+
+<h2 id="divisions">Divisions<a class="anchor" href="#divisions" aria-label="Link to this section">#</a></h2>
+
+<p>A rating maps to a band in <code>Services/Divisions.cs</code>. The thresholds are placeholders until there
+are enough real matches to place them: collect the distribution, then draw the lines.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Division</th><th class="num">From rating</th></tr></thead>
+  <tbody>
+    <tr><td>Division I</td><td class="num">2400</td></tr>
+    <tr><td>Division II</td><td class="num">2000</td></tr>
+    <tr><td>Division III</td><td class="num">1600</td></tr>
+    <tr><td>Division IV</td><td class="num">1200</td></tr>
+    <tr><td>Division V</td><td class="num">0</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="edges">Edges<a class="anchor" href="#edges" aria-label="Link to this section">#</a></h2>
+
+<ul>
+  <li><strong>The floor is 100.</strong> A rating that can fall forever is not a rank, it is a punishment, and
+  it breaks matchmaking: a player at −400 could never be bridged to anybody by a widening window.</li>
+  <li><strong>The recorded delta is the applied delta.</strong> A computed −30 against a rating of 110 is
+  written to <code>MatchPlayer.RatingDelta</code> as −10, so a player's rating always equals 1000 plus the sum of
+  their deltas.</li>
+  <li><strong>Draws are real.</strong> MR12 without overtime ends 12-12. <code>S</code> is 0.5, neither wins nor
+  losses move, and the minimum-change rule does not apply.</li>
+  <li><strong>A match with no rounds, or with an empty team, rates nothing.</strong> There was no
+  contest.</li>
+  <li><strong>1v1 and short matches work unchanged.</strong> Nothing in the formula assumes five a side, or
+  that both teams are the same size.</li>
+</ul>
+
+<h2 id="applied-exactly-once">Applied exactly once<a class="anchor" href="#applied-exactly-once" aria-label="Link to this section">#</a></h2>
+
+<p><code>series_end</code> can arrive twice. MatchZy does not deduplicate, does not retry, and does not know
+whether its last event was received. A rating system that is merely <em>unlikely</em> to double-apply will
+double-apply. So the right to apply a result is not a check; it is a <strong>claim on a row</strong>:</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">MatchResults.cs</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-sql"><span class="hljs-keyword">UPDATE</span> &quot;Matches&quot;
+   <span class="hljs-keyword">SET</span> &quot;Status&quot; <span class="hljs-operator">=</span> <span class="hljs-string">&#x27;Finished&#x27;</span>, &quot;ScoreA&quot; <span class="hljs-operator">=</span> <span class="hljs-variable">@a</span>, &quot;ScoreB&quot; <span class="hljs-operator">=</span> <span class="hljs-variable">@b</span>
+ <span class="hljs-keyword">WHERE</span> &quot;Id&quot; <span class="hljs-operator">=</span> <span class="hljs-variable">@id</span> <span class="hljs-keyword">AND</span> &quot;Status&quot; <span class="hljs-operator">&lt;&gt;</span> <span class="hljs-string">&#x27;Finished&#x27;</span></code></pre></div>
+
+<p>This runs inside a transaction, with the ratings written in the same transaction. One row changed means
+this call owns the transition and applies the ratings. Zero rows means somebody else already finished the
+match, and nothing is written.</p>
+
+<figure class="diagram not-prose"><pre class="mermaid">sequenceDiagram
+    participant A as series_end (first)
+    participant DB as Postgres
+    participant B as series_end (duplicate)
+
+    A-&gt;&gt;DB: BEGIN
+    A-&gt;&gt;DB: UPDATE … WHERE Status ≠ Finished
+    DB--&gt;&gt;A: 1 row, the claim
+    B-&gt;&gt;DB: BEGIN
+    B-&gt;&gt;DB: UPDATE … WHERE Status ≠ Finished
+    Note over B,DB: blocked on A's row lock
+    A-&gt;&gt;DB: UPDATE ratings, wins, losses, deltas
+    A-&gt;&gt;DB: COMMIT
+    DB--&gt;&gt;B: 0 rows, already Finished
+    B-&gt;&gt;DB: ROLLBACK</pre></figure>
+
+<p>There is no window between the check and the write, because there is no check: the statement that decides
+is the statement that writes. That is why only <code>MatchResults</code> ever sets a match to
+<code>Finished</code>. If two places could finish a match, there would be two places that could rate one.</p>
+
+<h2 id="worked-examples">Worked examples<a class="anchor" href="#worked-examples" aria-label="Link to this section">#</a></h2>
+
+<p>All figures from the implementation, established players (K = 32) unless stated.</p>
+
+<h3 id="an-even-match">An even match<a class="anchor" href="#an-even-match" aria-label="Link to this section">#</a></h3>
+
+<p>Ten players at 1000, Team A wins 13-9. <code>E = 0.5</code> for everyone, so <code>base = ±16</code>.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Player</th><th class="num">perf</th><th class="num">Δ</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Winner, average game</td><td class="num">0.0</td><td class="num"><strong>+16</strong></td><td>The result, and nothing else</td></tr>
+    <tr><td>Winner, best on the server</td><td class="num">+1.0</td><td class="num"><strong>+24</strong></td><td>+8, the full quarter of K</td></tr>
+    <tr><td>Winner, carried</td><td class="num">−1.0</td><td class="num"><strong>+8</strong></td><td>Still up: winning is winning</td></tr>
+    <tr><td>Loser, top fragger</td><td class="num">+1.0</td><td class="num"><strong>−8</strong></td><td>Softened, not reversed</td></tr>
+    <tr><td>Loser, average game</td><td class="num">0.0</td><td class="num"><strong>−16</strong></td><td></td></tr>
+    <tr><td>Loser, quiet game</td><td class="num">−1.0</td><td class="num"><strong>−24</strong></td><td></td></tr>
+  </tbody>
+</table></div>
+
+<p>The difference between losing well and winning badly is nothing at all: the winner takes more. That
+ordering is the design.</p>
+
+<h3 id="the-underdog">The underdog<a class="anchor" href="#the-underdog" aria-label="Link to this section">#</a></h3>
+
+<p>Team A averages 1000, Team B averages 1400. <code>E = 0.09</code> for A, <code>0.91</code> for B.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Outcome</th><th class="num">Δ for a 1000 player</th><th class="num">Δ for a 1400 player</th></tr></thead>
+  <tbody>
+    <tr><td>A wins</td><td class="num"><strong>+29</strong></td><td class="num"><strong>−29</strong></td></tr>
+    <tr><td>B wins</td><td class="num"><strong>−3</strong></td><td class="num"><strong>+3</strong></td></tr>
+  </tbody>
+</table></div>
+
+<p>Beating a team 400 points above you is worth ten times beating one at your level; beating a team 400
+points below is worth almost nothing, which stops anyone farming weaker opponents.</p>
+
+<h3 id="a-first-match">A first match<a class="anchor" href="#a-first-match" aria-label="Link to this section">#</a></h3>
+
+<p>A new account at 1000, <code>K = 64</code>, wins against a team averaging 1200 with an average game.
+<code>E = 0.24</code>, <code>base = 64 × 0.76 = 48.6</code>: <strong>+49</strong>. Three matches like it put them in
+Division IV, which is the point of the provisional window.</p>
+
+<h2 id="not-in-the-first-version">Not in the first version<a class="anchor" href="#not-in-the-first-version" aria-label="Link to this section">#</a></h2>
+
+<ul>
+  <li><strong>Rating decay.</strong> A decay before there is a season just punishes people for the project
+  being new.</li>
+  <li><strong>Seasons and resets.</strong> A reset belongs with the first real season.</li>
+  <li><strong>Rating deviation.</strong> The seam is <code>K</code>.</li>
+  <li><strong>Party-adjusted expectation.</strong> A five-stack should be expected to beat five solo players of
+  the same rating, and one day that belongs in <code>E</code>.</li>
+</ul>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="parties.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Matchmaking &amp; parties</span>
+          </a>
+          <a href="deploy-windows.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] items-end text-right sm:col-start-2">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Next<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Deploy on Windows</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#the-decision-everything-follows-from">The decision everything follows from</a>
+          <a class="toc-link" href="#the-formula">The formula</a>
+          <a class="toc-link toc-sub" href="#calculator">Try it</a>
+          <a class="toc-link toc-sub" href="#why-the-opponent-s-mean-and-not-the-lobby-s">Why the opponent's mean, and not the lobby's</a>
+          <a class="toc-link toc-sub" href="#why-elo-and-not-glicko-or-trueskill">Why Elo and not Glicko or TrueSkill</a>
+          <a class="toc-link" href="#performance">Performance</a>
+          <a class="toc-link" href="#new-players">New players</a>
+          <a class="toc-link" href="#divisions">Divisions</a>
+          <a class="toc-link" href="#edges">Edges</a>
+          <a class="toc-link" href="#applied-exactly-once">Applied exactly once</a>
+          <a class="toc-link" href="#worked-examples">Worked examples</a>
+          <a class="toc-link toc-sub" href="#an-even-match">An even match</a>
+          <a class="toc-link toc-sub" href="#the-underdog">The underdog</a>
+          <a class="toc-link toc-sub" href="#a-first-match">A first match</a>
+          <a class="toc-link" href="#not-in-the-first-version">Not in the first version</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/docs/RATING.md" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+  <script src="assets/diagrams.js"></script>
+</body>
+</html>

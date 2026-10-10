@@ -1,0 +1,338 @@
+<!-- {
+  "title": "Rating",
+  "lead": "What a match is worth, and why. An Elo model on the result, plus a bounded correction for how you played inside it.",
+  "description": "FLICKED's rating algorithm: Elo expected score on the match result, a bounded performance modifier, provisional K factor, the rating floor, and exactly-once application.",
+  "source": "docs/RATING.md"
+} -->
+<p>The code is <code>backend/Flicked.Api/Services/Rating.cs</code> (the arithmetic, no database) and
+<code>Services/MatchResults.cs</code> (the one place a result is ever applied). If they disagree with this page,
+the code is right.</p>
+
+<h2>The decision everything follows from</h2>
+
+<p><strong>The result is the rating. Performance is a correction to it.</strong></p>
+
+<p>Every ladder that weights statistics heavily ends up measuring statistics. Players optimise what is
+measured: they take the fight that pads a K/D instead of the one that wins the round, they save instead of
+retaking, they farm damage on a lost round rather than trading for the plant. It is why Valve's own rank
+moves on wins and losses.</p>
+
+<p>So the shape is fixed: an Elo expected-score model on the match result, plus a <strong>bounded</strong>
+modifier for how the player did. Performance is capped at a quarter of what the result is worth, and a
+further rule makes it structurally unable to change the sign:</p>
+
+<blockquote><p class="text-[17px]"><strong>A win never loses you rating. A loss never gains you rating.</strong></p></blockquote>
+
+<p>However badly you play, winning moves you up. However well you play, losing moves you down. The modifier
+only decides <em>how far</em>, and that is the property the tests protect.</p>
+
+<h2>The formula</h2>
+
+<p>For each player in a finished match:</p>
+
+<pre data-lang="text" data-title="per player">
+E      = 1 / (1 + 10^((opponentMean − rating) / 400))
+base   = K × (S − E)
+bonus  = K × 0.25 × perf
+delta  = round(base + bonus), then forced to at least ±1 in the direction of the result
+rating = max(100, rating + delta)
+</pre>
+
+<table>
+  <thead><tr><th>Symbol</th><th>Is</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>rating</code></td><td>This player's rating before the match</td><td>New accounts start at 1000</td></tr>
+    <tr><td><code>opponentMean</code></td><td>Mean rating of the <strong>other</strong> team</td><td>Their team, not the whole lobby</td></tr>
+    <tr><td><code>E</code></td><td>Expected score, 0 to 1</td><td>Standard Elo, 400-point scale</td></tr>
+    <tr><td><code>S</code></td><td>1 win, 0 loss, 0.5 draw</td><td>The only thing the player controls as a team</td></tr>
+    <tr><td><code>K</code></td><td>64 sliding to 32 over ten matches</td><td>See <a href="#new-players">New players</a></td></tr>
+    <tr><td><code>perf</code></td><td>−1 to +1, relative to this match</td><td>See <a href="#performance">Performance</a></td></tr>
+  </tbody>
+</table>
+
+<h3 id="calculator">Try it</h3>
+
+<div class="rounded-xl border border-white/[.08] bg-surface" id="rating-calc">
+  <div class="grid gap-4 p-5 sm:grid-cols-2">
+    <label class="block">
+      <span class="eyebrow">Your rating</span>
+      <input type="number" data-in="rating" value="1000" min="100" step="10" class="mt-2 h-[42px] w-full rounded-md border border-white/10 bg-black/20 px-3 font-mono text-[14px] text-foreground tabular-nums focus:outline-[1.5px] focus:outline-offset-[3px] focus:outline-primary-light">
+    </label>
+    <label class="block">
+      <span class="eyebrow">Opponent team mean</span>
+      <input type="number" data-in="opp" value="1000" min="100" step="10" class="mt-2 h-[42px] w-full rounded-md border border-white/10 bg-black/20 px-3 font-mono text-[14px] text-foreground tabular-nums focus:outline-[1.5px] focus:outline-offset-[3px] focus:outline-primary-light">
+    </label>
+    <label class="block">
+      <span class="eyebrow">Matches played</span>
+      <input type="number" data-in="played" value="10" min="0" step="1" class="mt-2 h-[42px] w-full rounded-md border border-white/10 bg-black/20 px-3 font-mono text-[14px] text-foreground tabular-nums focus:outline-[1.5px] focus:outline-offset-[3px] focus:outline-primary-light">
+    </label>
+    <div>
+      <span class="eyebrow">Result</span>
+      <div class="mt-2 grid h-[42px] grid-cols-3 gap-1 rounded-md border border-white/10 bg-black/20 p-1" role="radiogroup" aria-label="Result">
+        <button type="button" data-result="1" class="rounded text-[13.5px] font-medium text-subtle transition-colors aria-checked:bg-white/[.08] aria-checked:text-foreground" role="radio" aria-checked="true">Win</button>
+        <button type="button" data-result="0.5" class="rounded text-[13.5px] font-medium text-subtle transition-colors aria-checked:bg-white/[.08] aria-checked:text-foreground" role="radio" aria-checked="false">Draw</button>
+        <button type="button" data-result="0" class="rounded text-[13.5px] font-medium text-subtle transition-colors aria-checked:bg-white/[.08] aria-checked:text-foreground" role="radio" aria-checked="false">Loss</button>
+      </div>
+    </div>
+    <label class="block sm:col-span-2">
+      <span class="flex items-center justify-between"><span class="eyebrow">Performance</span><span class="font-mono text-[12px] text-muted tabular-nums" data-out="perfLabel">0.00</span></span>
+      <input type="range" data-in="perf" value="0" min="-1" max="1" step="0.05" class="mt-3 w-full accent-primary">
+      <span class="mt-1 flex justify-between font-mono text-[10.5px] text-subtle"><span>−1 quiet game</span><span>+1 best on the server</span></span>
+    </label>
+  </div>
+  <div class="flex flex-wrap items-end justify-between gap-4 border-t border-white/[.06] bg-black/10 px-5 py-4">
+    <div>
+      <p class="eyebrow">Rating change</p>
+      <p class="mt-1 font-mono text-[2.4rem] leading-none font-medium tabular-nums text-foreground" data-out="delta">+16</p>
+    </div>
+    <dl class="grid grid-cols-4 gap-x-6 gap-y-1 font-mono text-[12px] tabular-nums">
+      <dt class="text-subtle">E</dt><dt class="text-subtle">K</dt><dt class="text-subtle">base</dt><dt class="text-subtle">bonus</dt>
+      <dd class="text-muted" data-out="e">0.50</dd><dd class="text-muted" data-out="k">32</dd><dd class="text-muted" data-out="base">16.0</dd><dd class="text-muted" data-out="bonus">0.0</dd>
+    </dl>
+  </div>
+</div>
+
+<script>
+(() => {
+  const root = document.getElementById("rating-calc");
+  const val = k => Number(root.querySelector(`[data-in="${k}"]`).value) || 0;
+  const out = (k, v) => { root.querySelector(`[data-out="${k}"]`).textContent = v; };
+  let S = 1;
+  const update = () => {
+    const rating = Math.max(100, val("rating")), opp = val("opp"), played = Math.max(0, val("played")), perf = val("perf");
+    const E = 1 / (1 + Math.pow(10, (opp - rating) / 400));
+    const K = 32 * (1 + Math.max(0, 10 - played) / 10);
+    const base = K * (S - E), bonus = K * 0.25 * perf;
+    let delta = Math.round(base + bonus);
+    if (S === 1) delta = Math.max(1, delta);
+    if (S === 0) delta = Math.min(-1, delta);
+    const applied = Math.max(100, rating + delta) - rating;
+    out("delta", (applied > 0 ? "+" : applied < 0 ? "−" : "±") + Math.abs(applied));
+    out("e", E.toFixed(2)); out("k", K.toFixed(K % 1 ? 1 : 0));
+    out("base", base.toFixed(1)); out("bonus", bonus.toFixed(1));
+    out("perfLabel", (perf > 0 ? "+" : "") + perf.toFixed(2));
+    root.querySelector('[data-out="delta"]').classList.toggle("text-primary-light", applied > 0);
+  };
+  root.querySelectorAll("[data-in]").forEach(i => i.addEventListener("input", update));
+  root.querySelectorAll("[data-result]").forEach(b => b.addEventListener("click", () => {
+    S = Number(b.dataset.result);
+    root.querySelectorAll("[data-result]").forEach(x => x.setAttribute("aria-checked", String(x === b)));
+    update();
+  }));
+  update();
+})();
+</script>
+
+<h3>Why the opponent's mean, and not the lobby's</h3>
+
+<p><code>E</code> is a claim: <em>this rating says you should beat that team this often</em>. The evidence for or
+against it is the other team. Your own teammates' ratings are not evidence about you, so they do not
+appear.</p>
+
+<p>Team mean against team mean would be tidier and exactly zero-sum, but it rates a 2000-rated player
+carried by four 1000s as if they were a 1200 player. With per-player expectation the strongest player in a
+lopsided team gains least for winning and loses most for losing, which is the right direction. The cost is
+that the system is <strong>not exactly zero-sum</strong>: total rating drifts slightly when teams are
+uneven, which is invisible next to the noise on an instance with a few dozen players.</p>
+
+<h3>Why Elo and not Glicko or TrueSkill</h3>
+
+<p>Glicko's rating deviation and TrueSkill's σ are the right answer when there is enough data to estimate
+them. On an instance with twenty players, RD barely leaves its initial value, and the machinery costs two
+extra columns, a migration, a time decay loop, and a number nobody can explain when they ask why they lost
+14 points.</p>
+
+<p>The uncertainty that matters here, <em>this account is new and we have no idea how good they are</em>, is
+captured by the K factor in one line. When there is enough data, the base term is a drop-in replacement:
+<code>E</code> and <code>S</code> stay as they are, and only <code>K</code> becomes a function of two deviations.</p>
+
+<h2>Performance</h2>
+
+<p><code>perf</code> answers one question: <strong>relative to the other people in this match, how did this
+player do?</strong> Not "how good is this K/D". Relative, always, and to this match only.</p>
+
+<pre data-lang="text" data-title="performance">
+rounds     = scoreA + scoreB
+duel_i     = (kills_i − deaths_i) / rounds
+perf_i     = clamp( 0.5 × (duel_i − mean(duel)) / 0.25
+                  + 0.5 × (adr_i  − mean(adr))  / 25 , −1, +1 )
+</pre>
+
+<ul>
+  <li><strong>Duelling</strong>: net kills per round against the match average. A quarter-kill per round
+  better than everybody else, about six net kills over 24 rounds, is a standout game and scores the full
+  half.</li>
+  <li><strong>Damage</strong>: damage per round against the match average. 25 clear of the field is the same
+  kind of standout, and it credits the player who does the opening damage somebody else converts.</li>
+</ul>
+
+<p>Measuring against the match's own average makes it immune to match length, to a stomp where everyone's
+figures are inflated, and to a patch that changes weapon damage. A player cannot improve their
+<code>perf</code> by picking easier opponents, because everyone is scored against the people who were
+there.</p>
+
+<p><strong>Why a fixed reference and not the standard deviation.</strong> A z-score would be wrong here: in a
+1v1 test match the deviation is whatever the gap between two players happens to be, and every 1v1 would end
+with both at ±1. Fixed references keep a close game close.</p>
+
+<p><strong>What it is worth.</strong> <code>K × 0.25</code>, so ±8 for an established player and ±16 for a brand
+new one. Against a base term of ±32 (±64 provisional), the best game anyone has ever played is worth a
+quarter of the result.</p>
+
+<aside class="callout callout-note"><div>
+  <p><strong>When performance is skipped.</strong> With fewer than five rounds reported, <code>perf</code> is 0
+  for everybody and rating is decided on the result alone. That covers a match abandoned early, and the
+  degraded path where only <code>series_end</code> arrived. Stats come from <code>round_end</code>, because
+  MatchZy sends an empty players array in <code>map_result</code> (see <a href="matchzy.html#map-result-sends-no-player-stats">MatchZy</a>).
+  If no stats ever arrive, everything degrades cleanly to plain Elo.</p>
+</div></aside>
+
+<h2>New players</h2>
+
+<p><code>K</code> starts at 64 and slides linearly to 32 over the first ten matches:</p>
+
+<pre data-lang="text" data-title="k factor">
+K = 32 × (1 + max(0, 10 − matchesPlayed) / 10)
+</pre>
+
+<table>
+  <thead><tr><th class="num">Matches played</th><th class="num">K</th><th class="num">A coin-flip win is worth</th></tr></thead>
+  <tbody>
+    <tr><td class="num">0</td><td class="num">64</td><td class="num">+32</td></tr>
+    <tr><td class="num">5</td><td class="num">48</td><td class="num">+24</td></tr>
+    <tr><td class="num">10 or more</td><td class="num">32</td><td class="num">+16</td></tr>
+  </tbody>
+</table>
+
+<p>A new account's 1000 is a guess, so it should move fast; a veteran's 2400 is the sum of hundreds of
+matches, so it should not. Ten matches gets a genuinely strong player out of the wrong bracket within an
+evening, without one good night minting a Division I player. <code>matchesPlayed</code> is
+<code>Wins + Losses</code>, so there is no separate counter to drift.</p>
+
+<p>The launcher's leaderboard tags provisional players, because a rating built from two matches next to one
+built from three hundred is worth an asterisk.</p>
+
+<h2>Divisions</h2>
+
+<p>A rating maps to a band in <code>Services/Divisions.cs</code>. The thresholds are placeholders until there
+are enough real matches to place them: collect the distribution, then draw the lines.</p>
+
+<table>
+  <thead><tr><th>Division</th><th class="num">From rating</th></tr></thead>
+  <tbody>
+    <tr><td>Division I</td><td class="num">2400</td></tr>
+    <tr><td>Division II</td><td class="num">2000</td></tr>
+    <tr><td>Division III</td><td class="num">1600</td></tr>
+    <tr><td>Division IV</td><td class="num">1200</td></tr>
+    <tr><td>Division V</td><td class="num">0</td></tr>
+  </tbody>
+</table>
+
+<h2>Edges</h2>
+
+<ul>
+  <li><strong>The floor is 100.</strong> A rating that can fall forever is not a rank, it is a punishment, and
+  it breaks matchmaking: a player at −400 could never be bridged to anybody by a widening window.</li>
+  <li><strong>The recorded delta is the applied delta.</strong> A computed −30 against a rating of 110 is
+  written to <code>MatchPlayer.RatingDelta</code> as −10, so a player's rating always equals 1000 plus the sum of
+  their deltas.</li>
+  <li><strong>Draws are real.</strong> MR12 without overtime ends 12-12. <code>S</code> is 0.5, neither wins nor
+  losses move, and the minimum-change rule does not apply.</li>
+  <li><strong>A match with no rounds, or with an empty team, rates nothing.</strong> There was no
+  contest.</li>
+  <li><strong>1v1 and short matches work unchanged.</strong> Nothing in the formula assumes five a side, or
+  that both teams are the same size.</li>
+</ul>
+
+<h2>Applied exactly once</h2>
+
+<p><code>series_end</code> can arrive twice. MatchZy does not deduplicate, does not retry, and does not know
+whether its last event was received. A rating system that is merely <em>unlikely</em> to double-apply will
+double-apply. So the right to apply a result is not a check; it is a <strong>claim on a row</strong>:</p>
+
+<pre data-lang="sql" data-title="MatchResults.cs">
+UPDATE "Matches"
+   SET "Status" = 'Finished', "ScoreA" = @a, "ScoreB" = @b
+ WHERE "Id" = @id AND "Status" <> 'Finished'
+</pre>
+
+<p>This runs inside a transaction, with the ratings written in the same transaction. One row changed means
+this call owns the transition and applies the ratings. Zero rows means somebody else already finished the
+match, and nothing is written.</p>
+
+<pre class="mermaid-src">
+sequenceDiagram
+    participant A as series_end (first)
+    participant DB as Postgres
+    participant B as series_end (duplicate)
+
+    A->>DB: BEGIN
+    A->>DB: UPDATE … WHERE Status ≠ Finished
+    DB-->>A: 1 row, the claim
+    B->>DB: BEGIN
+    B->>DB: UPDATE … WHERE Status ≠ Finished
+    Note over B,DB: blocked on A's row lock
+    A->>DB: UPDATE ratings, wins, losses, deltas
+    A->>DB: COMMIT
+    DB-->>B: 0 rows, already Finished
+    B->>DB: ROLLBACK
+</pre>
+
+<p>There is no window between the check and the write, because there is no check: the statement that decides
+is the statement that writes. That is why only <code>MatchResults</code> ever sets a match to
+<code>Finished</code>. If two places could finish a match, there would be two places that could rate one.</p>
+
+<h2>Worked examples</h2>
+
+<p>All figures from the implementation, established players (K = 32) unless stated.</p>
+
+<h3>An even match</h3>
+
+<p>Ten players at 1000, Team A wins 13-9. <code>E = 0.5</code> for everyone, so <code>base = ±16</code>.</p>
+
+<table>
+  <thead><tr><th>Player</th><th class="num">perf</th><th class="num">Δ</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Winner, average game</td><td class="num">0.0</td><td class="num"><strong>+16</strong></td><td>The result, and nothing else</td></tr>
+    <tr><td>Winner, best on the server</td><td class="num">+1.0</td><td class="num"><strong>+24</strong></td><td>+8, the full quarter of K</td></tr>
+    <tr><td>Winner, carried</td><td class="num">−1.0</td><td class="num"><strong>+8</strong></td><td>Still up: winning is winning</td></tr>
+    <tr><td>Loser, top fragger</td><td class="num">+1.0</td><td class="num"><strong>−8</strong></td><td>Softened, not reversed</td></tr>
+    <tr><td>Loser, average game</td><td class="num">0.0</td><td class="num"><strong>−16</strong></td><td></td></tr>
+    <tr><td>Loser, quiet game</td><td class="num">−1.0</td><td class="num"><strong>−24</strong></td><td></td></tr>
+  </tbody>
+</table>
+
+<p>The difference between losing well and winning badly is nothing at all: the winner takes more. That
+ordering is the design.</p>
+
+<h3>The underdog</h3>
+
+<p>Team A averages 1000, Team B averages 1400. <code>E = 0.09</code> for A, <code>0.91</code> for B.</p>
+
+<table>
+  <thead><tr><th>Outcome</th><th class="num">Δ for a 1000 player</th><th class="num">Δ for a 1400 player</th></tr></thead>
+  <tbody>
+    <tr><td>A wins</td><td class="num"><strong>+29</strong></td><td class="num"><strong>−29</strong></td></tr>
+    <tr><td>B wins</td><td class="num"><strong>−3</strong></td><td class="num"><strong>+3</strong></td></tr>
+  </tbody>
+</table>
+
+<p>Beating a team 400 points above you is worth ten times beating one at your level; beating a team 400
+points below is worth almost nothing, which stops anyone farming weaker opponents.</p>
+
+<h3>A first match</h3>
+
+<p>A new account at 1000, <code>K = 64</code>, wins against a team averaging 1200 with an average game.
+<code>E = 0.24</code>, <code>base = 64 × 0.76 = 48.6</code>: <strong>+49</strong>. Three matches like it put them in
+Division IV, which is the point of the provisional window.</p>
+
+<h2>Not in the first version</h2>
+
+<ul>
+  <li><strong>Rating decay.</strong> A decay before there is a season just punishes people for the project
+  being new.</li>
+  <li><strong>Seasons and resets.</strong> A reset belongs with the first real season.</li>
+  <li><strong>Rating deviation.</strong> The seam is <code>K</code>.</li>
+  <li><strong>Party-adjusted expectation.</strong> A five-stack should be expected to beat five solo players of
+  the same rating, and one day that belongs in <code>E</code>.</li>
+</ul>

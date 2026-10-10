@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Running the CS2 server · FLICKED Docs</title>
+  <meta name="description" content="Operate a CS2 server for FLICKED: the Metamod, CounterStrikeSharp and MatchZy chain, health checks, updating after CS2 patches, and common errors.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Running the CS2 server · FLICKED Docs">
+  <meta property="og:description" content="Operate a CS2 server for FLICKED: the Metamod, CounterStrikeSharp and MatchZy chain, health checks, updating after CS2 patches, and common errors.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html" aria-current="page">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html" aria-current="page">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">CS2 servers</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">Running the CS2 server</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">Keeping the game side alive: the plugin chain, what breaks when Valve ships an update, and how to tell which link failed.</p>
+          </header>
+        <div class="prose-docs">
+<p>This is the part FLICKED does not own. It coordinates servers, it does not install or provision them, so
+when a match will not start the cause is usually here rather than in the backend. Everything below has been
+hit in practice on a real server.</p>
+
+<h2 id="the-chain">The chain<a class="anchor" href="#the-chain" aria-label="Link to this section">#</a></h2>
+
+<p>Four things have to load, in order, and each one fails differently:</p>
+
+<div class="grid gap-2 sm:grid-cols-4">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-4">
+    <p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">1 · Search path</p>
+    <p class="mt-1.5 text-[14.5px] font-semibold text-foreground">gameinfo.gi</p>
+    <p class="mt-1 text-[13px] leading-snug">Restored to stock by every <code>validate</code></p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-4">
+    <p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">2 · VDF loader</p>
+    <p class="mt-1.5 text-[14.5px] font-semibold text-foreground">Metamod</p>
+    <p class="mt-1 text-[13px] leading-snug">Removed if its folder is gone</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-4">
+    <p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">3 · .NET runtime</p>
+    <p class="mt-1.5 text-[14.5px] font-semibold text-foreground">CounterStrikeSharp</p>
+    <p class="mt-1 text-[13px] leading-snug">Breaks on CS2 updates (offsets)</p>
+  </div>
+  <div class="rounded-xl border border-primary/40 bg-primary/[.06] p-4">
+    <p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-primary-light">4 · Match plugin</p>
+    <p class="mt-1.5 text-[14.5px] font-semibold text-foreground">MatchZy</p>
+    <p class="mt-1 text-[13px] leading-snug">Refuses a second match per process</p>
+  </div>
+</div>
+
+<p>Learning this chain is most of the job: <strong>the symptom tells you which link broke</strong>, and each has
+a different fix.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>What the console says</th><th>Which link</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>Unknown command 'meta'</code></td><td>gameinfo.gi</td><td>Metamod never loaded at all</td></tr>
+    <tr><td><code>meta list</code> works, lists nothing useful</td><td>Metamod → CSS</td><td>The CSS loader is missing or failed</td></tr>
+    <tr><td><code>Unknown command 'css_plugins'</code></td><td>CounterStrikeSharp</td><td>CSS did not load, usually after a CS2 update</td></tr>
+    <tr><td><code>css_plugins list</code> works, no MatchZy</td><td>MatchZy</td><td>Plugin missing, or failed to load</td></tr>
+    <tr><td>MatchZy listed as <code>LOADED</code></td><td>None</td><td>The stack is healthy</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="health-check">Health check<a class="anchor" href="#health-check" aria-label="Link to this section">#</a></h2>
+
+<p>Three commands in the server console, in this order. Stop at the first one that fails: that is your
+link.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">server console</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">meta list              // is Metamod there, and does it list CounterStrikeSharp?
+css_plugins list       // is MatchZy LOADED?
+status                 // which map, how many players, is the port right</code></pre></div>
+
+<aside class="callout callout-warn"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><div>
+  <p><strong>A server showing <code>Idle</code> does not mean the plugins work.</strong> The pool's liveness check is
+  a bare RCON <code>echo</code>, which succeeds on a server with no plugins at all. <code>Idle</code> proves three
+  things only: the machine is up, the port is open, and the RCON password is right. Whether MatchZy exists is a
+  question only the console answers.</p>
+</div></aside>
+
+<h2 id="updating-after-a-cs2-patch">Updating after a CS2 patch<a class="anchor" href="#updating-after-a-cs2-patch" aria-label="Link to this section">#</a></h2>
+
+<p>CS2 updates itself for players. A dedicated server never does, and the symptom is <strong>"Your client is out
+of date"</strong> when someone tries to connect.</p>
+
+<ol class="steps">
+  <li>
+    <h4>Finish or cancel any live match</h4>
+    <p>FLICKED needs nothing from you here. After about ninety seconds of failed RCON pings the pool marks the
+    server <strong>Offline</strong> and stops handing it matches; it returns to <strong>Idle</strong> by itself once
+    the server answers again.</p>
+  </li>
+  <li>
+    <h4>Update with SteamCMD</h4>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Windows</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-powershell">&amp; C:\steamcmd\steamcmd.exe +force_install_dir C:\cs2<span class="hljs-literal">-server</span> +login anonymous +app_update <span class="hljs-number">730</span> validate +quit</code></pre></div>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Linux</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-bash">/opt/steamcmd/steamcmd.sh +force_install_dir /opt/cs2 +login anonymous +app_update 730 validate +quit</code></pre></div>
+  </li>
+  <li>
+    <h4>Put the Metamod search path back</h4>
+    <p><strong><code>validate</code> restores <code>gameinfo.gi</code> to stock, every time</strong>, which removes the
+    line that loads Metamod. This is the single most common reason a server comes back with no plugins.
+    Check before starting; nothing printed means the line is gone:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">PowerShell</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-powershell"><span class="hljs-built_in">Select-String</span> <span class="hljs-literal">-Path</span> C:\cs2<span class="hljs-literal">-server</span>\game\csgo\gameinfo.gi <span class="hljs-literal">-Pattern</span> metamod</code></pre></div>
+    <p>Add it <strong>above</strong> <code>Game csgo</code>. Below it, Metamod will not load.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">game/csgo/gameinfo.gi</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">SearchPaths
+{
+    Game    csgo/addons/metamod
+    Game    csgo
+    Game    core</code></pre></div>
+  </li>
+  <li>
+    <h4>Check the stack came back</h4>
+    <p><code>meta list</code>, then <code>css_plugins list</code>. If <code>meta</code> works but
+    <code>css_plugins</code> does not, read on.</p>
+  </li>
+</ol>
+
+<h2 id="counterstrikesharp-and-cs2-updates">CounterStrikeSharp and CS2 updates<a class="anchor" href="#counterstrikesharp-and-cs2-updates" aria-label="Link to this section">#</a></h2>
+
+<p><strong>Expect CSS to break after a significant CS2 update.</strong> It reads game memory through offsets and
+schema definitions that shift whenever Valve changes the binaries, so a CSS build is tied to a game build.
+When that happens:</p>
+
+<ol>
+  <li>Check CounterStrikeSharp's releases for a build naming the current CS2 version.</li>
+  <li>If there is none yet, the schema fix usually lands in its repository before a release is cut. Building
+  from source is a legitimate option and has been necessary before.</li>
+  <li>Until CSS loads, <strong>no match can run</strong>. The backend will keep trying, failing and releasing the
+  server, which is correct behaviour but looks alarming.</li>
+</ol>
+
+<p>There is normally a lag of hours to days after a major update. Nothing to fix on the FLICKED side; wait
+for the plugin ecosystem.</p>
+
+<aside class="callout callout-note"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div>
+  <p><strong>Careful with the addons folder.</strong> Deleting <code>addons/metamod</code> also removes the
+  <code>.vdf</code> file that loads CounterStrikeSharp, so Metamod comes back and CSS does not. If you reinstall
+  Metamod, reinstall CSS afterwards.</p>
+</div></aside>
+
+<h2 id="what-flicked-needs-from-a-server">What FLICKED needs from a server<a class="anchor" href="#what-flicked-needs-from-a-server" aria-label="Link to this section">#</a></h2>
+
+<p>Less than you would expect. <strong><code>server.cfg</code> needs no FLICKED-specific lines.</strong></p>
+
+<ul>
+  <li><strong>RCON working</strong>, with the password you gave the dashboard. It is the only channel FLICKED
+  uses to control the server.</li>
+  <li><strong>MatchZy loaded</strong>, nothing more. FLICKED sends the match config URL, the authentication
+  header and the event-reporting settings over RCON when it starts a match.</li>
+</ul>
+
+<p>Two behaviours worth knowing, both verified against the plugin's source and recorded in
+<a href="matchzy.html">MatchZy integration</a>:</p>
+
+<ul>
+  <li><strong>MatchZy accepts one match per process.</strong> FLICKED therefore sends
+  <code>css_plugins reload MatchZy</code> before every match. That is deliberate, not a workaround to
+  remove.</li>
+  <li><strong>Events are never retried or deduplicated.</strong> <code>series_end</code> can arrive twice or not
+  at all, which is why finishing a match is a <a href="rating.html#applied-exactly-once">claim on a row</a>.</li>
+</ul>
+
+<h3 id="if-you-change-the-rcon-password">If you change the RCON password<a class="anchor" href="#if-you-change-the-rcon-password" aria-label="Link to this section">#</a></h3>
+
+<p>Update it in the dashboard as well. The stored copy is encrypted and cannot be read back for comparison,
+so the only symptom of a mismatch is the server dropping to <strong>Offline</strong> while being perfectly
+healthy.</p>
+
+<h2 id="errors-seen-in-practice">Errors seen in practice<a class="anchor" href="#errors-seen-in-practice" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Error</th><th>Where to look</th></tr></thead>
+  <tbody>
+    <tr><td><code>Your client is out of date</code> on connect</td><td>The server is behind; update it</td></tr>
+    <tr><td><code>Unknown command 'meta'</code></td><td>The <code>gameinfo.gi</code> search path</td></tr>
+    <tr><td><code>Unknown command 'css_plugins'</code></td><td>CSS not loaded, usually after a CS2 update</td></tr>
+    <tr><td><code>FATAL ERROR: CAppSystemDict: Unable to create interface Source2ServerConfig001</code></td><td>An invalid <code>gameinfo.gi</code> edit, or launching from the wrong directory. Compare against a stock copy first</td></tr>
+    <tr><td><code>Failed to initialize Steamworks SDK for gameserver</code></td><td>The server cannot find its Steam client files. Reinstall through SteamCMD into the same folder and launch from the server's own directory</td></tr>
+    <tr><td>Server window opens and closes instantly</td><td>Run it from a console so the error survives; on Windows check the Visual C++ redistributable is installed</td></tr>
+    <tr><td>MatchZy says a match is already running</td><td>The per-process flag; reload the plugin or restart the server</td></tr>
+    <tr><td>Match loads the wrong map</td><td>The server fetched a config it could not reach, or MatchZy was never reloaded. Check <code>Api:PublicUrl</code> is an address the <em>server</em> can resolve</td></tr>
+  </tbody>
+</table></div>
+
+<p><strong>Read both logs.</strong> FLICKED's log says what it sent and whether RCON answered; the game console
+says what the server did with it. Most confusion comes from looking at only one of them.</p>
+
+<h2 id="keep-it-running">Keep it running<a class="anchor" href="#keep-it-running" aria-label="Link to this section">#</a></h2>
+
+<p>A console window dies when you log out. On <strong>Windows</strong>, register it as a service with
+<a href="https://nssm.cc">NSSM</a>, or create a Task Scheduler task set to <em>Run whether user is logged on or
+not</em> with the trigger <em>At startup</em>. On <strong>Linux</strong>, use a systemd unit shaped like the ones in
+<a href="deploy-linux.html#5-run-both-as-services">Deploy on Linux</a>. It will reboot eventually, and you will
+not be watching.</p>
+
+<h3 id="worth-keeping-a-copy-of">Worth keeping a copy of<a class="anchor" href="#worth-keeping-a-copy-of" aria-label="Link to this section">#</a></h3>
+
+<ul>
+  <li>The <code>gameinfo.gi</code> search path line, restored to stock by every <code>validate</code></li>
+  <li><code>server.cfg</code> and any other config you have edited</li>
+  <li>The <code>addons</code> folder, or a note of which Metamod and CSS versions are installed</li>
+  <li>Your launch command, including the GSLT token</li>
+</ul>
+
+<h2 id="routine-after-every-cs2-update">Routine after every CS2 update<a class="anchor" href="#routine-after-every-cs2-update" aria-label="Link to this section">#</a></h2>
+
+<ol class="steps">
+  <li><strong>Update with SteamCMD</strong></li>
+  <li><strong>Re-add the Metamod line to <code>gameinfo.gi</code></strong></li>
+  <li><strong>Start the server</strong></li>
+  <li><strong><code>meta list</code>, then <code>css_plugins list</code></strong></li>
+  <li><strong>If CSS is broken, get a matching build before expecting matches</strong></li>
+  <li><strong>Confirm the dashboard shows the server Idle, then run one match and watch it load the map</strong>
+  <p>Step 6 is the only one that proves the whole path. The first five prove the server starts.</p></li>
+</ol>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="security.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Security</span>
+          </a>
+          <a href="matchzy.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] items-end text-right sm:col-start-2">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Next<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">MatchZy integration</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#the-chain">The chain</a>
+          <a class="toc-link" href="#health-check">Health check</a>
+          <a class="toc-link" href="#updating-after-a-cs2-patch">Updating after a CS2 patch</a>
+          <a class="toc-link" href="#counterstrikesharp-and-cs2-updates">CounterStrikeSharp and CS2 updates</a>
+          <a class="toc-link" href="#what-flicked-needs-from-a-server">What FLICKED needs from a server</a>
+          <a class="toc-link toc-sub" href="#if-you-change-the-rcon-password">If you change the RCON password</a>
+          <a class="toc-link" href="#errors-seen-in-practice">Errors seen in practice</a>
+          <a class="toc-link" href="#keep-it-running">Keep it running</a>
+          <a class="toc-link toc-sub" href="#worth-keeping-a-copy-of">Worth keeping a copy of</a>
+          <a class="toc-link" href="#routine-after-every-cs2-update">Routine after every CS2 update</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/docs/CS2-SERVER.md" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

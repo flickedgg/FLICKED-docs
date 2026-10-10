@@ -1,0 +1,401 @@
+<!-- {
+  "title": "Architecture",
+  "lead": "Four programs and a database. The backend owns every decision; everything else asks it. This is the map: what talks to what, in what order, and which piece is trusted with what.",
+  "description": "How FLICKED fits together: the backend, launcher, dashboard, CS2 servers, sign-in, the match lifecycle, state machines, data model and trust boundaries.",
+  "source": "docs/ARCHITECTURE.md"
+} -->
+<aside class="callout callout-note"><div>
+  <p>If a diagram disagrees with the code, the code is right and this page is stale.</p>
+</div></aside>
+
+<h2>The whole system</h2>
+
+<pre class="mermaid-src">
+graph TB
+    subgraph players["Players"]
+        launcher["<b>Launcher</b><br/>Tauri · Rust + React<br/>queue, friends, history"]
+    end
+    subgraph admins["Admins"]
+        dashboard["<b>Dashboard</b><br/>Next.js<br/>server pool, news"]
+    end
+    subgraph public["Anyone"]
+        website["<b>Website</b><br/>Next.js<br/>marketing"]
+    end
+    backend["<b>Backend</b><br/>ASP.NET Core · C#<br/>every rule lives here"]
+    db[("<b>PostgreSQL</b><br/>players, matches,<br/>friendships, servers, queue")]
+    subgraph games["Community hardware"]
+        cs2["<b>CS2 servers</b><br/>Metamod + CounterStrikeSharp<br/>+ MatchZy"]
+    end
+    steam["<b>Steam</b><br/>OpenID + Web API"]
+
+    launcher -->|"HTTPS · bearer token"| backend
+    dashboard -->|"HTTPS · session cookie"| backend
+    website -.->|"static, no API calls yet"| backend
+    backend --> db
+    backend -->|"RCON · TCP 27015"| cs2
+    cs2 -->|"match events · HTTPS"| backend
+    backend -->|"verify sign-in, read profiles"| steam
+    launcher -->|"sign in, in the system browser"| steam
+</pre>
+
+<blockquote><p><strong>The rule that shapes everything:</strong> the backend decides, the clients display. No
+client is trusted with identity, match results, or who may do what.</p></blockquote>
+
+<h2>Inside the backend</h2>
+
+<p>Controllers are thin: authenticate, validate, call a service, shape a response. Anything with a rule in
+it (who may claim a server, what a fair match is, when a lease has expired) lives in a service, so the
+matchmaker and an admin pressing a button go through exactly the same code.</p>
+
+<pre class="mermaid-src">
+graph LR
+    subgraph controllers["Controllers · HTTP"]
+        auth["AuthController<br/>sign-in, sessions, /me"]
+        queue["QueueController<br/>join, accept, vote"]
+        party["PartyController<br/>invite, accept, kick"]
+        social["SocialController<br/>/api/social/state, polled"]
+        adminSrv["AdminServersController<br/>the pool, admin only"]
+        srvApi["MatchServerController<br/>ServersController<br/>called by CS2 servers"]
+    end
+    subgraph services["Services · the rules"]
+        currentPlayer["CurrentPlayer<br/>token or cookie → Player"]
+        serverAuth["ServerAuth<br/>X-Server-Token → GameServer"]
+        matchmaker["Matchmaker<br/>queue → matches, phases"]
+        partySvc["Parties<br/>who may join, leave, invite"]
+        pool["ServerPool<br/>claim · release · sweep"]
+        starter["MatchStarter<br/>token + RCON command"]
+        results["MatchResults<br/>finish once, apply ratings"]
+        rcon["Rcon<br/>Source RCON client"]
+    end
+    subgraph loops["Background loops"]
+        poolJanitor["PoolJanitor · 30s"]
+        mmJanitor["MatchmakerJanitor · 2s"]
+    end
+    db[("PostgreSQL · EF Core")]
+
+    auth --> currentPlayer
+    queue --> currentPlayer
+    queue --> partySvc
+    party --> partySvc
+    social --> currentPlayer
+    adminSrv --> starter
+    srvApi --> serverAuth
+    srvApi --> pool
+    srvApi --> results
+    mmJanitor --> matchmaker
+    mmJanitor --> partySvc
+    mmJanitor --> pool
+    mmJanitor --> starter
+    poolJanitor --> pool
+    pool --> rcon
+    starter --> rcon
+    services --> db
+    loops --> db
+</pre>
+
+<table>
+  <thead><tr><th>Service</th><th>Responsibility</th></tr></thead>
+  <tbody>
+    <tr><td><code>CurrentPlayer</code></td><td>Turns a bearer token or the <code>flicked.session</code> cookie into a player</td></tr>
+    <tr><td><code>ServerAuth</code></td><td>Turns an <code>X-Server-Token</code> header into a registered game server</td></tr>
+    <tr><td><code>SteamOpenId</code> · <code>SteamProfile</code></td><td>Verifies sign-in with Steam server to server, and reads names and avatars</td></tr>
+    <tr><td><code>Matchmaker</code></td><td>Forms matches from the queue and advances accept and vote phases</td></tr>
+    <tr><td><code>Parties</code> · <code>Social</code></td><td>Party rules, and the combined friends and party state a screen draws</td></tr>
+    <tr><td><code>ServerPool</code></td><td>Claims, releases and sweeps servers on leases</td></tr>
+    <tr><td><code>MatchStarter</code></td><td>Mints the match token and sends the RCON command that loads the match</td></tr>
+    <tr><td><code>MatchResults</code> · <code>Rating</code></td><td>Finishes a match exactly once and applies the <a href="rating.html">rating</a> arithmetic</td></tr>
+    <tr><td><code>Secrets</code> · <code>ServerSecrets</code></td><td>Hash what you only check, encrypt what you have to replay</td></tr>
+    <tr><td><code>NewsPosts</code></td><td>Publishes, edits and removes news posts</td></tr>
+  </tbody>
+</table>
+
+<h2>Signing in</h2>
+
+<p>Two clients, two ways to carry a session, one <code>Sessions</code> table.</p>
+
+<pre class="mermaid-src">
+sequenceDiagram
+    participant L as Launcher (Rust)
+    participant B as Browser
+    participant API as Backend
+    participant S as Steam
+
+    Note over L: the launcher can hold a secret,<br/>a browser cannot
+    L->>L: listen on 127.0.0.1:free port
+    L->>B: open /auth/steam/login?port=…
+    B->>API: GET /auth/steam/login
+    API->>B: redirect to Steam
+    B->>S: sign in (password never touches FLICKED)
+    S->>B: redirect back with an assertion
+    B->>API: GET /auth/steam/callback
+    API->>S: check_authentication (server to server)
+    S-->>API: is_valid:true
+    API->>API: find or create Player by Steam ID
+    API->>B: redirect to 127.0.0.1:port?code=…
+    B->>L: the one-time code
+    L->>API: POST /auth/exchange { code }
+    API-->>L: session token (shown once)
+    L->>L: store in the OS keychain
+</pre>
+
+<ul>
+  <li><strong>Why a code rather than the token:</strong> URLs end up in browser history and logs. The code is
+  single-use, expires in two minutes, and the token only ever travels in a request the launcher makes
+  itself.</li>
+  <li><strong>The dashboard</strong> uses the same verification but ends differently: the backend sets an
+  HttpOnly cookie and redirects back, because a browser cannot keep a token safely.
+  <code>CurrentPlayer</code> accepts either.</li>
+  <li><strong>Verification is server to server.</strong> Everything arriving from the browser is a claim;
+  only Steam confirming it makes it true.</li>
+</ul>
+
+<h2>A match, start to finish</h2>
+
+<pre class="mermaid-src">
+sequenceDiagram
+    participant P as 10 launchers
+    participant API as Backend
+    participant MM as MatchmakerJanitor (2s)
+    participant Pool as ServerPool
+    participant CS as CS2 server + MatchZy
+
+    P->>API: POST /api/queue
+    Note over MM: every 2 seconds
+    MM->>MM: FormMatchesAsync<br/>group by rating window
+    MM-->>P: match found (polled)
+    P->>API: POST /api/queue/accept ×10
+    MM->>MM: all accepted → Voting
+    P->>API: POST /api/queue/vote ×10
+    MM->>MM: most votes wins → Pending
+    MM->>Pool: ClaimAsync(mode, matchId)
+    Note over Pool: SELECT … FOR UPDATE SKIP LOCKED<br/>so two matches cannot take one server
+    Pool-->>MM: a server, now Reserved
+    MM->>CS: RCON: matchzy_loadmatch_url url X-Match-Token token
+    CS->>API: GET /api/matches/{id}/config
+    API-->>CS: roster, map, and where to report
+    CS->>API: series_start
+    CS->>API: going_live
+    API->>Pool: MarkHosting (lease 5m → 90m)
+    Note over CS: the match is played
+    CS->>API: round_end, map_result (score + stats)
+    CS->>API: series_end
+    API->>Pool: ReleaseAsync → Idle
+</pre>
+
+<ul>
+  <li><strong>The config carries its own reporting settings</strong>, so a stock MatchZy needs nothing
+  configured by hand beyond an RCON password.</li>
+  <li><strong>MatchZy never retries and never deduplicates.</strong> So every handler is idempotent, and the
+  lease is the safety net: a lost <code>series_end</code> cannot strand a server.</li>
+</ul>
+
+<h2>Two state machines</h2>
+
+<h3>A match</h3>
+
+<pre class="mermaid-src">
+stateDiagram-v2
+    direction LR
+    [*] --> Accepting: a full match found,<br/>or a short one after 20s
+    Accepting --> Voting: everyone accepted
+    Accepting --> Cancelled: someone declined<br/>or the 20s ran out
+    Voting --> Pending: map chosen (15s)
+    Pending --> Live: going_live
+    Live --> Finished: map_result / series_end
+    Pending --> Cancelled: no server, or nobody connected
+    Finished --> [*]
+    Cancelled --> [*]
+</pre>
+
+<h3>A server in the pool</h3>
+
+<pre class="mermaid-src">
+stateDiagram-v2
+    direction LR
+    [*] --> Offline: registered by an admin
+    Offline --> Idle: answers RCON (checked every 30s)
+    Idle --> Offline: stops answering
+    Idle --> Reserved: claimed for a match
+    Reserved --> Hosting: going_live
+    Hosting --> Idle: series_end
+    Reserved --> Idle: lease expired (20m)
+    Hosting --> Idle: lease expired (90m)
+</pre>
+
+<p>The lease arrows are the ones that matter. Without them, one crashed server leaves the pool silently
+and forever.</p>
+
+<h2>The data</h2>
+
+<pre class="mermaid-src">
+erDiagram
+    Players ||--o{ Sessions : "signs in"
+    Players ||--o{ LoginCodes : "one-time"
+    Players ||--o| PartyMembers : "is in at most one"
+    Parties ||--|{ PartyMembers : "has"
+    Parties ||--o{ PartyInvites : "has pending"
+    Parties ||--o| QueueEntry : "waits, as one"
+    Players ||--o{ MatchPlayers : "plays"
+    Players ||--o{ Friendships : "requester / addressee"
+    Matches ||--|{ MatchPlayers : "has ten"
+    Matches ||--o| Servers : "is hosted on"
+
+    Players {
+        int Id PK
+        string SteamId UK
+        string Name
+        int Rating
+        bool IsAdmin
+    }
+    Matches {
+        int Id PK
+        string Map
+        int ScoreA
+        int ScoreB
+        enum Status
+        string ConfigTokenHash
+    }
+    MatchPlayers {
+        int MatchId PK, FK
+        int PlayerId PK, FK
+        int Team
+        int Kills
+        int Deaths
+        int RatingDelta
+    }
+    Servers {
+        int Id PK
+        string Host
+        int Port
+        string RconPasswordEncrypted
+        string TokenHash
+        enum Status
+        datetime LeaseUntil
+    }
+    QueueEntry {
+        int PartyId UK
+        enum Mode
+        datetime JoinedAt
+    }
+    Parties {
+        int Id PK
+        int LeaderId FK
+    }
+</pre>
+
+<ul>
+  <li><strong>Every queue entry is a party</strong>, and somebody playing alone is a party of one. There is
+  no second shape of queue entry for solo players, so there is no solo path for the party path to
+  disagree with. See <a href="parties.html">Matchmaking &amp; parties</a>.</li>
+  <li><strong>Derived, never stored:</strong> a player's rank, win rate, K/D and damage per round; a match's
+  result; whether a server is free. Anything stored twice eventually disagrees with itself.</li>
+</ul>
+
+<h2>Who is trusted with what</h2>
+
+<table>
+  <thead><tr><th>Credential</th><th>Held by</th><th>Stored as</th><th>Proves</th></tr></thead>
+  <tbody>
+    <tr><td>Session token</td><td>Launcher, in the OS keychain</td><td>SHA-256 hash</td><td>You are this player</td></tr>
+    <tr><td>Session cookie</td><td>Browser, HttpOnly</td><td>The same <code>Sessions</code> row</td><td>You are this admin</td></tr>
+    <tr><td>Server token</td><td>A CS2 server's config</td><td>SHA-256 hash</td><td>This is that server</td></tr>
+    <tr><td>Match token</td><td>Sent in the RCON command</td><td>SHA-256 hash</td><td>This is that one match</td></tr>
+    <tr><td>RCON password</td><td>The backend</td><td><strong>Encrypted</strong> (Data Protection)</td><td>Lets FLICKED command a server</td></tr>
+  </tbody>
+</table>
+
+<blockquote><p><strong>Hash what you only check; encrypt what you have to replay.</strong> An RCON password has to
+be sent again, so it cannot be hashed. Everything else is only ever compared, so it is never stored in a
+form anyone could use.</p></blockquote>
+
+<p><strong>The launcher's webview never sees a token.</strong> Rust holds it, makes the authenticated calls,
+and hands the interface names and numbers only, so a scripting bug in the UI cannot walk off with a
+session.</p>
+
+<h2>Inside the launcher</h2>
+
+<pre class="mermaid-src">
+graph LR
+    subgraph webview["Webview · React + TypeScript"]
+        views["Views<br/>Play · Matches · Friends<br/>Leaderboard · News"]
+        hooks["Hooks<br/>useSession · useSocial<br/>useQueue · useParty · usePresence"]
+        api["lib/api.ts<br/>public endpoints"]
+    end
+    subgraph rust["Rust · src-tauri"]
+        authrs["auth.rs<br/>Steam sign-in, keychain"]
+        apirs["api.rs<br/>authenticated calls"]
+        presence["presence.rs<br/>Discord rich presence"]
+    end
+    backend["Backend"]
+
+    views --> hooks
+    hooks --> api
+    hooks -->|"invoke()"| authrs
+    hooks -->|"invoke()"| apirs
+    api -->|"news, leaderboard"| backend
+    apirs -->|"+ bearer token"| backend
+    authrs --> backend
+</pre>
+
+<p><strong>The split:</strong> public data (news, leaderboard) is fetched straight from the webview; anything
+about <em>you</em> goes through Rust, because that is where the token lives. Each authenticated endpoint
+gets its own command rather than one general "call this path", so a compromised webview cannot borrow the
+token freely.</p>
+
+<h2>Inside the dashboard</h2>
+
+<pre class="mermaid-src">
+graph LR
+    routes["app/servers · app/news<br/>server components"]
+    shell["dash-shell.tsx<br/>the admin gate"]
+    session["lib/session.ts<br/>forwards the cookie"]
+    panels["servers-panel · news-panel<br/>client components"]
+    libs["lib/servers.ts · lib/news.ts<br/>credentials: include"]
+    backend["Backend<br/>/api/admin/servers<br/>/api/admin/news"]
+
+    routes --> shell --> session --> backend
+    routes --> panels --> libs --> backend
+</pre>
+
+<p><strong>The gate is a component, not a layout.</strong> <code>DashShell</code> wraps each page rather than
+<code>app/layout.tsx</code> doing the checking, because the gate has to know which page was asked for: that
+is the <code>returnTo</code> Steam sends somebody back to.</p>
+
+<aside class="callout callout-tip"><div>
+  <p><strong>Two gotchas that cost time here:</strong></p>
+  <p>A <strong>server component's</strong> fetch does not carry the browser's cookies. They have to be read
+  with <code>next/headers</code> and forwarded by hand, or every request looks signed out.</p>
+  <p>A <strong>client component's</strong> fetch needs <code>credentials: "include"</code>, and the backend must
+  name the dashboard's origin in CORS: a wildcard is refused once credentials are involved.</p>
+</div></aside>
+
+<p>The admin check runs on the server on every request, with no caching, so a revoked session or a
+removed admin flag takes effect immediately.</p>
+
+<h2>What runs on a timer</h2>
+
+<table>
+  <thead><tr><th>Loop</th><th class="num">Every</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>MatchmakerJanitor</code></td><td class="num">2s</td><td>Form matches, advance accept and vote phases, start ready matches, sweep expired party invites</td></tr>
+    <tr><td><code>PoolJanitor</code></td><td class="num">30s</td><td>Reclaim expired leases, check each server over RCON</td></tr>
+  </tbody>
+</table>
+
+<p>Both open a fresh DI scope per pass (a <code>BackgroundService</code> is a singleton and must never hold a
+<code>DbContext</code>) and swallow exceptions, because one bad pass must not end the loop for the life of
+the process.</p>
+
+<h2>Where the seams are</h2>
+
+<p>Things deliberately left as boundaries, so they can be replaced without touching the rest:</p>
+
+<ul>
+  <li><strong>The pool answers one question:</strong> "give me a server for this match". Today the answer
+  comes from a table of registered servers. Automatic provisioning would be another way a row appears, and
+  matchmaking would never notice.</li>
+  <li><strong>MatchZy sits behind two endpoints</strong>, a config and an event feed. A custom
+  CounterStrikeSharp plugin would speak the same two.</li>
+  <li><strong>Presence and the queue are polled today.</strong> SignalR would replace the polling without
+  changing what the screens render.</li>
+</ul>

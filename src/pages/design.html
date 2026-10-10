@@ -1,0 +1,247 @@
+<!-- {
+  "title": "Design system",
+  "lead": "The visual language for everything FLICKED ships: the website, the launcher, the dashboard, and these docs. Dark, neutral, lots of space, and one accent.",
+  "description": "FLICKED's design system: principles, colour tokens, contrast, typography, spacing, components, motion, writing rules and Tailwind tokens.",
+  "source": "docs/DESIGN.md"
+} -->
+<p>The website is the reference implementation, and its tokens live in <code>website/app/globals.css</code>.
+This site uses the same tokens.</p>
+
+<h2>Principles</h2>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <div class="card"><p class="card-title">Clean and quiet</p><p class="card-text">Dark, neutral, lots of space. The calm of a Valve product page, not a gaming RGB setup.</p></div>
+  <div class="card"><p class="card-title">One accent</p><p class="card-text">Orange is the only saturated colour. If everything is orange, nothing is.</p></div>
+  <div class="card"><p class="card-title">The product is the picture</p><p class="card-text">Show real UI (scoreboards, queues, server status) instead of decoration. No stock art, no abstract 3D.</p></div>
+  <div class="card"><p class="card-title">Plain words, and honest</p><p class="card-text">Anyone should understand a label without CS jargon. FLICKED is alpha: say so, and never fake numbers.</p></div>
+</div>
+
+<h3>Tried and removed</h3>
+
+<p>These looked "cool" and made the product feel cheap. Do not bring them back: laser beams and glowing blobs
+behind content, custom crosshair cursors, text scramble effects, italic or skewed headings and buttons,
+animated counters, spotlight-on-hover cards, floating collage hero layouts, and em dashes in copy.</p>
+
+<h2>Colour</h2>
+
+<p>Dark only. There is no light theme.</p>
+
+<h3>Neutrals</h3>
+
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-bg"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">bg</p><p class="font-mono text-[11.5px] text-subtle">#0c0c0d</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-surface"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">surface</p><p class="font-mono text-[11.5px] text-subtle">#131315</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-elevated"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">elevated</p><p class="font-mono text-[11.5px] text-subtle">#19191c</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-foreground"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">foreground</p><p class="font-mono text-[11.5px] text-subtle">#ffffff</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-muted"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">muted</p><p class="font-mono text-[11.5px] text-subtle">#b4b4b8 · body</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-subtle"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">subtle</p><p class="font-mono text-[11.5px] text-subtle">#8d8d93 · captions</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-faint"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">faint</p><p class="font-mono text-[11.5px] text-subtle">#5a5a60 · decor only</p></div></div>
+</div>
+
+<h3>Accent and status</h3>
+
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-primary"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">primary</p><p class="font-mono text-[11.5px] text-subtle">#f65600</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-primary-light"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">primary-light</p><p class="font-mono text-[11.5px] text-subtle">#ff7a33 · text</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-slate"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">slate</p><p class="font-mono text-[11.5px] text-subtle">#7d8aa0 · other team</p></div></div>
+  <div class="overflow-hidden rounded-xl border border-white/[.08]"><div class="h-16 bg-warning"></div><div class="bg-surface px-3 py-2.5"><p class="text-[13px] font-medium text-foreground">warning</p><p class="font-mono text-[11.5px] text-subtle">#e0b341 · pending</p></div></div>
+</div>
+
+<ul>
+  <li><strong><code>primary</code></strong> is sampled from the logo: primary buttons, active states, live dots,
+  progress fills, highlighted heading words.</li>
+  <li><strong><code>primary-light</code></strong> is for orange <em>text</em> on dark: links, positive deltas, the
+  focus ring.</li>
+  <li><strong>Text on an orange button is near-black <code>#0c0c0d</code></strong> (5.8:1), never white (3.4:1).</li>
+</ul>
+
+<h3>Contrast</h3>
+
+<table>
+  <thead><tr><th>Text colour</th><th class="num">on bg</th><th class="num">on surface</th><th class="num">on elevated</th></tr></thead>
+  <tbody>
+    <tr><td><code>foreground</code></td><td class="num">19.6</td><td class="num">18.6</td><td class="num">17.5</td></tr>
+    <tr><td><code>muted</code></td><td class="num">9.5</td><td class="num">9.0</td><td class="num">8.5</td></tr>
+    <tr><td><code>subtle</code></td><td class="num">5.9</td><td class="num">5.6</td><td class="num">5.3</td></tr>
+    <tr><td><code>primary-light</code></td><td class="num">7.5</td><td class="num">7.1</td><td class="num">6.8</td></tr>
+    <tr><td><code>primary</code></td><td class="num">5.8</td><td class="num">5.5</td><td class="num">5.2</td></tr>
+    <tr><td><code>slate</code></td><td class="num">5.6</td><td class="num">5.3</td><td class="num">5.0</td></tr>
+    <tr><td><code>faint</code></td><td class="num text-warning">2.9</td><td class="num text-warning">2.7</td><td class="num text-warning">2.6</td></tr>
+  </tbody>
+</table>
+
+<p><code>faint</code> fails WCAG for text and is for decoration only: dividers, disabled states, placeholder
+glyphs.</p>
+
+<h2>Typography</h2>
+
+<div class="space-y-3">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-6">
+    <p class="eyebrow">Display · Barlow Condensed 700</p>
+    <p class="display mt-3 text-[3rem] leading-[.92]">Everything a pug night needs. <span class="text-primary">Nothing rented.</span></p>
+    <p class="mt-3 text-[13px] text-subtle">Headings only. Uppercase, upright, tight line height.</p>
+  </div>
+  <div class="grid gap-3 sm:grid-cols-2">
+    <div class="rounded-xl border border-white/[.08] bg-surface p-6">
+      <p class="eyebrow">UI and body · Inter</p>
+      <p class="mt-3 text-[18px] font-semibold tracking-[-0.01em] text-foreground">Card title, sentence case</p>
+      <p class="mt-1 text-[14.5px]">Body text is muted, with lines kept under about sixty characters.</p>
+    </div>
+    <div class="rounded-xl border border-white/[.08] bg-surface p-6">
+      <p class="eyebrow">Data · JetBrains Mono</p>
+      <p class="mt-3 font-mono text-[18px] tabular-nums text-foreground">13 – 9 · 1,482</p>
+      <p class="mt-1 font-mono text-[12px] uppercase tracking-[.12em] text-subtle">Numbers, IDs, logs, labels</p>
+    </div>
+  </div>
+</div>
+
+<ul>
+  <li><strong>Headings are two beats:</strong> a statement in white, then a short payoff in <code>primary</code>.</li>
+  <li><strong>The FLICKED wordmark is the only italic text anywhere</strong>, matching the logo's slant.</li>
+  <li><strong>Numbers that update or line up</strong> use <code>font-variant-numeric: tabular-nums</code>.</li>
+</ul>
+
+<table>
+  <thead><tr><th>Name</th><th>Size</th><th>Style</th></tr></thead>
+  <tbody>
+    <tr><td>Hero</td><td><code>clamp(3.1rem, 8.5vw, 6rem)</code></td><td>Display, line-height 0.92</td></tr>
+    <tr><td>Section heading</td><td><code>clamp(2.4rem, 4.6vw, 3.7rem)</code></td><td>Display, line-height 0.95</td></tr>
+    <tr><td>Card title</td><td>18px</td><td>Inter 600, <code>-0.01em</code></td></tr>
+    <tr><td>Body large</td><td>16.5 to 17px</td><td>Inter 400, line-height 1.65</td></tr>
+    <tr><td>Body</td><td>14.5px</td><td>Inter 400, <code>muted</code></td></tr>
+    <tr><td>Label (eyebrow)</td><td>12px</td><td>Mono 500, uppercase, <code>.12em</code>, <code>subtle</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Layout and shape</h2>
+
+<p><strong>Base unit 4px.</strong> Common steps: 8, 12, 16, 24, 28, 40, 56, 64, 96. Content max-width 1400px,
+card padding 28px, 14px between cards.</p>
+
+<div class="flex flex-wrap items-end gap-4">
+  <div class="text-center"><div class="size-14 rounded-[4px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">4 · tags</p></div>
+  <div class="text-center"><div class="size-14 rounded-[6px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">6 · buttons</p></div>
+  <div class="text-center"><div class="size-14 rounded-[8px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">8 · wells</p></div>
+  <div class="text-center"><div class="size-14 rounded-[10px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">10 · tiles</p></div>
+  <div class="text-center"><div class="size-14 rounded-[12px] border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">12 · cards</p></div>
+  <div class="text-center"><div class="size-14 rounded-full border border-white/[.14] bg-elevated"></div><p class="mt-2 font-mono text-[11px] text-subtle">999 · dots</p></div>
+</div>
+
+<p><strong>Depth comes from surface colour and borders, not glow.</strong> Shadows are black and soft; coloured
+shadows and glows are off-brand.</p>
+
+<table>
+  <thead><tr><th>Plane</th><th>Background</th><th>Border</th><th>Shadow</th></tr></thead>
+  <tbody>
+    <tr><td>0 · page</td><td><code>bg</code></td><td>none</td><td>none</td></tr>
+    <tr><td>1 · card</td><td><code>surface</code></td><td><code>rgba(255,255,255,.08)</code></td><td>none</td></tr>
+    <tr><td>2 · raised</td><td><code>elevated</code></td><td><code>rgba(255,255,255,.10)</code></td><td><code>0 20px 60px rgba(0,0,0,.5)</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Components</h2>
+
+<h3>Buttons</h3>
+
+<div class="flex flex-wrap items-center gap-3 rounded-xl border border-white/[.08] bg-surface p-6">
+  <button type="button" class="btn-primary">Find match</button>
+  <button type="button" class="btn-outline">Report an issue</button>
+</div>
+
+<p>Primary is <code>primary</code> fill with near-black text, hover <code>#ff6414</code>. Outline is transparent
+with a <code>.14</code> border, <code>.28</code> on hover. 42px tall, 6px radius. <strong>One primary button per
+view.</strong></p>
+
+<h3>Status, tags and progress</h3>
+
+<div class="flex flex-wrap items-center gap-6 rounded-xl border border-white/[.08] bg-surface p-6 text-[14px]">
+  <span class="flex items-center gap-2 text-foreground"><span class="dot dot-live"></span>Live</span>
+  <span class="flex items-center gap-2 text-foreground"><span class="dot bg-warning"></span>Starting</span>
+  <span class="flex items-center gap-2 text-foreground"><span class="dot bg-faint"></span>Finished</span>
+  <span class="tag"><span class="dot size-1.5 bg-primary"></span>de_mirage</span>
+  <span class="block h-1 w-40 overflow-hidden rounded-full bg-white/[.08]"><span class="block h-full w-3/5 rounded-full bg-primary"></span></span>
+</div>
+
+<p>Status is always a dot <em>plus a word</em>, never colour alone. Progress bars are 4px tall on a
+<code>.08</code> track.</p>
+
+<h3>Cards</h3>
+
+<p><code>surface</code> background, 12px radius, <code>.08</code> border. Inside: a 40px icon tile with an orange
+tint, an 18px title, one sentence, and a small labelled picture of the feature. Hover only brightens the
+border: no lifts, no glows.</p>
+
+<h2>Icons and motion</h2>
+
+<ul>
+  <li><strong>Icons</strong> are line icons on a 24px grid with a 1.7px stroke, round caps and joins, no fill.
+  <a href="https://lucide.dev">Lucide</a> matches. 20px in a 40px tile; 16px in buttons.</li>
+  <li><strong>Motion</strong> is quiet and never needed to understand the UI: 150 to 250ms for state changes,
+  easing <code>cubic-bezier(.22,.61,.36,1)</code>, and <code>prefers-reduced-motion</code> always respected.</li>
+</ul>
+
+<h2>Writing</h2>
+
+<ul>
+  <li>Plain language. "Damage per round", not "ADR". "Match replays", not "Demos".</li>
+  <li>When a CS term is the right word, keep it and explain it once nearby.</li>
+  <li>No em dashes. Use a full stop, comma or colon.</li>
+  <li>Sentence case for buttons and labels: "Get started", "Report an issue".</li>
+  <li>Be upfront about alpha status and missing features.</li>
+</ul>
+
+<h2>The launcher</h2>
+
+<p>The launcher renders web UI, so the tokens apply directly, at tool density: section padding drops to 24 to
+32px and headings to the h3 size or smaller. A dark custom titlebar with a <code>.06</code> hairline, a left
+sidebar with 36px nav items, and one orange action on screen ("Find match", "Accept", "Connect"). The match
+found dialog is the one place a bigger moment is fine: a plane-2 dialog with the countdown and ten player
+slots, filled orange when accepted.</p>
+
+<h2>Tokens</h2>
+
+<pre data-lang="css" data-title="Tailwind v4 · @theme">
+@theme {
+  --color-bg: #0c0c0d;
+  --color-surface: #131315;
+  --color-elevated: #19191c;
+  --color-foreground: #ffffff;
+  --color-muted: #b4b4b8;
+  --color-subtle: #8d8d93;
+  --color-faint: #5a5a60;
+  --color-primary: #f65600;
+  --color-primary-light: #ff7a33;
+  --color-slate: #7d8aa0;
+  --shadow-plane2: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+</pre>
+
+<pre data-lang="css" data-title="CSS custom properties">
+:root {
+  --line-soft: rgba(255, 255, 255, 0.05);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+
+  --radius-control: 6px;
+  --radius-well: 8px;
+  --radius-tile: 10px;
+  --radius-card: 12px;
+
+  --ease: cubic-bezier(.22, .61, .36, 1);
+
+  --font-display: "Barlow Condensed", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+</pre>
+
+<h2>Brand assets</h2>
+
+<div class="flex flex-wrap items-center gap-8 rounded-xl border border-white/[.08] bg-surface p-6">
+  <img src="assets/logo.png" alt="The FLICKED logo: an orange slanted F with a player silhouette" class="h-16 w-auto">
+  <div class="flex items-center gap-2.5"><img src="assets/logo.png" alt="" class="h-[30px] w-auto"><span class="wordmark text-[23px]">FLICKED</span></div>
+</div>
+
+<p>The logo (<code>assests/icon.png</code>) is an orange slanted F with a player silhouette. Do not recolour,
+outline or rotate it; minimum 20px tall. The wordmark is Barlow Condensed 700 italic, white, 23px next to a 30px
+logo.</p>

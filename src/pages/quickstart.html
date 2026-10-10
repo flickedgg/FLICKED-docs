@@ -1,0 +1,140 @@
+<!-- {
+  "title": "Quickstart",
+  "lead": "Get the database, the backend and the launcher running on your own machine. About ten minutes, most of it installing prerequisites.",
+  "description": "Run FLICKED locally: PostgreSQL in Docker, the ASP.NET Core backend and the Tauri launcher.",
+  "source": "CONTRIBUTING.md"
+} -->
+<h2>Prerequisites</h2>
+
+<table>
+  <thead><tr><th>Tool</th><th>Needed for</th><th>Get it</th></tr></thead>
+  <tbody>
+    <tr><td>Docker</td><td>PostgreSQL, and the backend tests</td><td><a href="https://www.docker.com/products/docker-desktop/">docker.com</a></td></tr>
+    <tr><td>.NET 10 SDK</td><td>The backend</td><td><a href="https://dotnet.microsoft.com/download">dotnet.microsoft.com</a></td></tr>
+    <tr><td>Node.js LTS</td><td>The launcher UI, website and dashboard</td><td><a href="https://nodejs.org/">nodejs.org</a></td></tr>
+    <tr><td>Rust</td><td>The launcher's native side</td><td><a href="https://rustup.rs">rustup.rs</a></td></tr>
+  </tbody>
+</table>
+
+<aside class="callout callout-note"><div>
+  <p>On Windows, Docker Desktop needs WSL2 installed before anything runs locally. That is the cost of
+  choosing PostgreSQL in Docker over a native database, and the reasoning is in the
+  <a href="roadmap.html#2026-09-19-postgresql-in-docker-not-xampp-s-mysql">decision log</a>.</p>
+</div></aside>
+
+<h2>Run it</h2>
+
+<ol class="steps">
+  <li>
+    <h4>Clone the repository</h4>
+<pre data-lang="bash" data-title="Terminal">
+git clone https://github.com/flickedgg/FLICKED.git
+cd FLICKED
+</pre>
+  </li>
+  <li>
+    <h4>Start the database</h4>
+    <p>The repository's <code>docker-compose.yml</code> runs PostgreSQL 18 with a development-only password.
+    Create no tables: the API applies its own migrations on startup.</p>
+<pre data-lang="bash" data-title="Terminal">
+docker compose up -d
+</pre>
+  </li>
+  <li>
+    <h4>Configure and start the backend</h4>
+    <p>Copy <code>backend/.env.example</code> to <code>backend/.env</code> and fill in a
+    <a href="https://steamcommunity.com/dev/apikey">Steam Web API key</a> and your SteamID64. The
+    connection string and <code>Steam:PublicUrl</code> already have development defaults in
+    <code>appsettings.Development.json</code> that match the Docker database.</p>
+<pre data-lang="ini" data-title="backend/.env">
+STEAM_API_KEY=YOUR_STEAM_API_KEY_HERE
+FLICKED_ADMIN_STEAM_IDS=YOUR_STEAM_ID_HERE
+
+# Only needed once a real CS2 server has to call you back. In development this
+# is a tunnel whose hostname changes on every restart, so it is not committed.
+FLICKED_API_PUBLIC_URL=https://your-public-api-url.com
+</pre>
+    <p>Then start it. The API serves on <code>http://localhost:5165</code> and applies its migrations on
+    the first run.</p>
+<pre data-lang="bash" data-title="Terminal">
+cd backend/Flicked.Api
+dotnet run --launch-profile https
+</pre>
+  </li>
+  <li>
+    <h4>Start the launcher</h4>
+    <p>Leaving <code>FLICKED_API</code> unset builds against <code>http://localhost:5165</code>, which is
+    what you want while developing.</p>
+<pre data-lang="bash" data-title="Terminal">
+cd launcher
+npm install
+npm run tauri dev
+</pre>
+  </li>
+</ol>
+
+<h2>The website and dashboard</h2>
+
+<p>Both are Next.js apps and run the usual way from their own folders. The dashboard expects the API on
+<code>http://localhost:5165</code> and is served on <code>http://localhost:3000</code>, which is the origin
+the backend allows by default.</p>
+
+<pre data-lang="bash" data-title="Terminal">
+cd dashboard   # or: cd website
+npm install
+npm run dev
+</pre>
+
+<p>To reach the dashboard as an admin, your SteamID64 must be listed in
+<code>FLICKED_ADMIN_STEAM_IDS</code>.</p>
+
+<h2>Play with fewer than ten people</h2>
+
+<p>A real Competitive match needs ten players. While testing alone or with a friend, shrink it:</p>
+
+<pre data-lang="ini" data-title="backend/.env">
+# a 1v1 is a complete match as far as the matchmaker and rating are concerned
+Matchmaking:CompetitivePlayers=2
+</pre>
+
+<p>Everything else, including rating, works unchanged at that size. See
+<a href="configuration.html#matchmaking">Configuration</a> for short-handed matches, which are the
+production-friendly version of the same idea.</p>
+
+<h2>Run the tests</h2>
+
+<pre data-lang="bash" data-title="Terminal">
+dotnet test backend
+</pre>
+
+<p>About 70 tests in roughly 30 seconds. They need Docker running because they use a real PostgreSQL
+database, <code>flicked_test</code>, which the fixture creates and migrates itself. Why real Postgres
+and not an in-memory provider is explained in <a href="contributing.html#tests">Contributing</a>.</p>
+
+<h2>Repository layout</h2>
+
+<table>
+  <thead><tr><th>Path</th><th>What is in it</th></tr></thead>
+  <tbody>
+    <tr><td><code>backend/</code></td><td>API and database code. <code>Flicked.slnx</code> opens it</td></tr>
+    <tr><td><code>launcher/</code></td><td>The desktop launcher: <code>src/</code> is the React UI, <code>src-tauri/</code> the Rust side</td></tr>
+    <tr><td><code>dashboard/</code></td><td>The admin dashboard</td></tr>
+    <tr><td><code>website/</code></td><td>The public website</td></tr>
+    <tr><td><code>docs/</code></td><td>Everything written down. These docs are built from it</td></tr>
+    <tr><td><code>assests/</code></td><td>Images, logos and other shared assets</td></tr>
+    <tr><td><code>docker-compose.yml</code></td><td>PostgreSQL for local development</td></tr>
+  </tbody>
+</table>
+
+<h2>Next steps</h2>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <a href="architecture.html" class="card">
+    <p class="card-title">Understand the architecture</p>
+    <p class="card-text">The map of every system, with diagrams.</p>
+  </a>
+  <a href="deploy-windows.html" class="card">
+    <p class="card-title">Host it for your friends</p>
+    <p class="card-text">One VPS running the CS2 server, the backend and the dashboard.</p>
+  </a>
+</div>

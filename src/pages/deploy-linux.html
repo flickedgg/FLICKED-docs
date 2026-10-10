@@ -1,0 +1,315 @@
+<!-- {
+  "title": "Deploy on Linux",
+  "lead": "The same deployment on a Linux server: systemd instead of a console window, a non-root user, Postgres from the package manager, and HTTPS in about five minutes.",
+  "description": "Host FLICKED on Linux with a service user, systemd units, Postgres, and HTTPS through Caddy.",
+  "source": "docs/DEPLOY-LINUX.md"
+} -->
+<p>Read <a href="deploy-windows.html#the-three-addresses">the three addresses</a> first: this page covers only
+what is different. Examples use Debian or Ubuntu; on Fedora or Alma, swap <code>apt</code> for
+<code>dnf</code> and <code>ufw</code> for <code>firewall-cmd</code>.</p>
+
+<aside class="callout callout-tip"><div>
+  <p><strong>Unlike the Windows guide, this one puts HTTPS in the main path.</strong> On Linux it is genuinely
+  easy, and every concern in <a href="security.html">Security</a> stops applying once you have it.</p>
+</div></aside>
+
+<h2>What runs where</h2>
+
+<pre data-lang="text" data-title="one Linux server">
+              ┌─────────────────── your Linux server ───────────────────┐
+  players ───►│  Caddy :443  ──►  Flicked.Api :5165                     │
+              │       │                  │                              │
+              │       └──────────►  Dashboard :3000                     │
+              │                          │                              │
+              │                     Postgres :5432  (localhost only)    │
+              └─────────────────────────────────────────────────────────┘
+                                  │
+  CS2 + MatchZy  ◄──── RCON ──────┘        (same box or another one)
+</pre>
+
+<p>Only Caddy faces the internet. The API, the dashboard and Postgres listen on localhost, so a firewall
+mistake cannot expose them.</p>
+
+<h2>1. A user for it</h2>
+
+<p>Never run this as root. It has no reason to write outside its own directory.</p>
+
+<pre data-lang="bash" data-title="server">
+sudo useradd --system --home /opt/flicked --shell /usr/sbin/nologin flicked
+sudo mkdir -p /opt/flicked/{api,dashboard,keys}
+sudo chown -R flicked:flicked /opt/flicked
+</pre>
+
+<h2>2. Postgres</h2>
+
+<pre data-lang="bash" data-title="server">
+sudo apt update
+sudo apt install -y postgresql
+sudo -u postgres psql
+</pre>
+
+<pre data-lang="sql" data-title="psql">
+CREATE USER flicked WITH PASSWORD 'pick-a-real-password';
+CREATE DATABASE flicked OWNER flicked;
+\q
+</pre>
+
+<p>Create no tables: the API migrates itself on startup. Postgres on Debian and Ubuntu listens on localhost
+only by default, which is what you want. Docker works properly here, so <code>docker compose up -d</code> with
+the repository's <code>docker-compose.yml</code> is a fine alternative.</p>
+
+<h2>3. Build and upload</h2>
+
+<p>The API and dashboard are built on your development machine, whatever it runs, and copied across.</p>
+
+<pre data-lang="bash" data-title="your machine">
+# API, targeting Linux
+dotnet publish backend/Flicked.Api -c Release -r linux-x64 --self-contained
+
+# dashboard
+cd dashboard
+npm install
+NEXT_PUBLIC_API_URL=https://flicked.example.com npx next build
+</pre>
+
+<pre data-lang="bash" data-title="your machine">
+rsync -a backend/Flicked.Api/bin/Release/net10.0/linux-x64/publish/ you@server:/tmp/api/
+rsync -a dashboard/.next/standalone/ you@server:/tmp/dashboard/
+rsync -a dashboard/.next/static/    you@server:/tmp/dashboard/.next/static/
+rsync -a dashboard/public/          you@server:/tmp/dashboard/public/
+</pre>
+
+<pre data-lang="bash" data-title="server">
+sudo cp -r /tmp/api/.       /opt/flicked/api/
+sudo cp -r /tmp/dashboard/. /opt/flicked/dashboard/
+sudo chown -R flicked:flicked /opt/flicked
+sudo chmod +x /opt/flicked/api/Flicked.Api
+</pre>
+
+<aside class="callout callout-warn"><div>
+  <p>That last line is not optional. The published binary arrives without the execute bit, and systemd's
+  <code>Permission denied</code> does not say why.</p>
+</div></aside>
+
+<h3>The launcher is still built on Windows</h3>
+
+<p><code>npm run tauri build</code> produces an installer for the machine it runs on. Your players are on
+Windows, so the launcher is built there (see <a href="deploy-windows.html#the-launcher">the Windows
+guide</a>), with <code>FLICKED_API</code> pointing at this server:</p>
+
+<pre data-lang="cmd" data-title="Windows build machine">
+set FLICKED_API=https://flicked.example.com
+</pre>
+
+<h3>What Linux needs that Windows did not</h3>
+
+<ul>
+  <li><strong>ICU.</strong> .NET needs <code>libicu</code> for anything culture-aware. Minimal images lack it,
+  and the failure is an exception on startup: <code>sudo apt install -y libicu-dev</code>.</li>
+  <li><strong>Node</strong>, for the dashboard: install the LTS from NodeSource or your distribution.</li>
+</ul>
+
+<h2 id="configure">4. Configure</h2>
+
+<pre data-lang="ini" data-title="/opt/flicked/api/.env">
+ConnectionStrings:Flicked=Host=localhost;Port=5432;Database=flicked;Username=flicked;Password=<db-password>
+
+# Behind a proxy these are the public https names, not the local port.
+Steam:PublicUrl=https://flicked.example.com
+Api:PublicUrl=https://flicked.example.com
+Dashboard:Url=https://dash.flicked.example.com
+
+# Localhost only: Caddy is the one thing listening publicly.
+urls=http://127.0.0.1:5165
+
+STEAM_API_KEY=<your-steam-web-api-key>
+FLICKED_ADMIN_STEAM_IDS=<your-steamid64>
+DataProtection:KeyPath=/opt/flicked/keys
+</pre>
+
+<p>This file holds your database password and Steam key, so do not leave it world-readable:</p>
+
+<pre data-lang="bash" data-title="server">
+sudo chown flicked:flicked /opt/flicked/api/.env
+sudo chmod 600 /opt/flicked/api/.env
+sudo chmod 700 /opt/flicked/keys
+</pre>
+
+<p><code>/opt/flicked/keys</code> holds the keys that encrypt stored RCON passwords. <strong>Back it up</strong>,
+and know that it does not move between machines.</p>
+
+<h2>5. Run both as services</h2>
+
+<pre data-lang="ini" data-title="/etc/systemd/system/flicked-api.service">
+[Unit]
+Description=FLICKED API
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=flicked
+Group=flicked
+WorkingDirectory=/opt/flicked/api
+ExecStart=/opt/flicked/api/Flicked.Api
+Restart=always
+RestartSec=5
+
+# It needs to read its own directory and write nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/flicked/keys
+
+[Install]
+WantedBy=multi-user.target
+</pre>
+
+<pre data-lang="ini" data-title="/etc/systemd/system/flicked-dashboard.service">
+[Unit]
+Description=FLICKED dashboard
+After=network-online.target flicked-api.service
+
+[Service]
+User=flicked
+Group=flicked
+WorkingDirectory=/opt/flicked/dashboard
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+</pre>
+
+<pre data-lang="bash" data-title="server">
+sudo systemctl daemon-reload
+sudo systemctl enable --now flicked-api flicked-dashboard
+sudo systemctl status flicked-api --no-pager
+journalctl -u flicked-api -f     # watch the first start apply migrations
+</pre>
+
+<p><code>ProtectSystem=strict</code> makes the whole filesystem read-only except what you name, which is why
+<code>ReadWritePaths=/opt/flicked/keys</code> is there. If you move <code>DataProtection:KeyPath</code>, move that
+line too, or the API starts and then fails the first time it encrypts anything.</p>
+
+<h2>6. HTTPS</h2>
+
+<h3>Option A: plain HTTP (testing only)</h3>
+
+<p>Set <code>urls=http://0.0.0.0:5165</code>, open the ports, and stop here. You are then running the setup
+whose costs are listed in <a href="security.html">Security</a>. Fine among friends for an evening, not
+otherwise.</p>
+
+<pre data-lang="bash" data-title="server">
+sudo ufw allow 5165/tcp
+sudo ufw allow 3000/tcp
+</pre>
+
+<h3>Option B: Caddy (recommended)</h3>
+
+<p>Point two DNS records at the server, then:</p>
+
+<pre data-lang="bash" data-title="server">
+sudo apt install -y caddy
+</pre>
+
+<pre data-lang="caddyfile" data-title="/etc/caddy/Caddyfile">
+flicked.example.com {
+    reverse_proxy 127.0.0.1:5165
+}
+
+dash.flicked.example.com {
+    reverse_proxy 127.0.0.1:3000
+}
+</pre>
+
+<pre data-lang="bash" data-title="server">
+sudo systemctl reload caddy
+sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
+</pre>
+
+<p>Caddy obtains and renews certificates by itself. Two things to know:</p>
+
+<ul>
+  <li><strong>The session cookie is marked <code>Secure</code> only when the request looks secure</strong>, and
+  behind a proxy it arrives over http on loopback. The API therefore reads <code>X-Forwarded-Proto</code>, but
+  only from a proxy on the same machine, because those headers are trivial to forge. If your proxy is on a
+  <em>different</em> machine, add its address to <code>KnownProxies</code> in <code>Program.cs</code>, or the cookie
+  silently loses its <code>Secure</code> flag.</li>
+  <li><strong>Rebuild the launcher</strong> once the addresses are <code>https://</code>. The address is compiled
+  in.</li>
+</ul>
+
+<h2>7. The CS2 server</h2>
+
+<p>MatchZy, Metamod and CounterStrikeSharp all run on Linux, and the backend does not care which the server
+is:</p>
+
+<pre data-lang="bash" data-title="server">
+sudo -u steam /opt/steamcmd/steamcmd.sh +force_install_dir /opt/cs2 \
+     +login anonymous +app_update 730 validate +quit
+</pre>
+
+<ul>
+  <li><strong><code>gameinfo.gi</code> is restored by <code>validate</code></strong>, exactly as on Windows. Re-add
+  the Metamod search path after every update. See <a href="cs2-server.html#updating-after-a-cs2-patch">Running
+  the CS2 server</a>.</li>
+  <li><strong>The RCON port must be reachable from the API.</strong> Same box means <code>127.0.0.1:27015</code>
+  and no firewall rule; another box means opening 27015 to this server's address only, not to the
+  world.</li>
+</ul>
+
+<h2>8. Keep the clock right</h2>
+
+<p>Match timers are drawn from timestamps, so a drifting clock shows a countdown that starts part-way
+through or sits at zero:</p>
+
+<pre data-lang="bash" data-title="server">
+timedatectl status          # want: "System clock synchronized: yes"
+sudo timedatectl set-ntp true
+</pre>
+
+<h2>Upgrading</h2>
+
+<pre data-lang="bash" data-title="upgrade">
+# on your machine
+dotnet publish backend/Flicked.Api -c Release -r linux-x64 --self-contained
+rsync -a backend/Flicked.Api/bin/Release/net10.0/linux-x64/publish/ you@server:/tmp/api/
+
+# on the server
+sudo -u postgres pg_dump flicked > ~/flicked-$(date +%F).sql   # before a data migration
+sudo systemctl stop flicked-api
+sudo cp -r /tmp/api/. /opt/flicked/api/
+sudo chown -R flicked:flicked /opt/flicked/api
+sudo chmod +x /opt/flicked/api/Flicked.Api
+sudo systemctl start flicked-api
+journalctl -u flicked-api -n 50 --no-pager
+</pre>
+
+<p>Unless the dependencies changed, only <code>Flicked.Api.dll</code> and <code>Flicked.Api.pdb</code> differ, so
+copying those two is enough.</p>
+
+<h2>Troubleshooting</h2>
+
+<p>Everything in the <a href="deploy-windows.html#troubleshooting">Windows troubleshooting table</a> still
+applies. These are the Linux-only ones.</p>
+
+<table>
+  <thead><tr><th>Symptom</th><th>Cause</th></tr></thead>
+  <tbody>
+    <tr><td><code>Permission denied</code> starting the service</td><td>The published binary has no execute bit: <code>chmod +x</code></td></tr>
+    <tr><td>Service starts, then fails encrypting something</td><td><code>ProtectSystem=strict</code> without <code>ReadWritePaths</code> for the key folder</td></tr>
+    <tr><td>Culture or globalization exception on startup</td><td><code>libicu</code> missing, typical of minimal images</td></tr>
+    <tr><td>Reachable on <code>:5165</code> but not through Caddy</td><td>Caddy is proxying a different port than the API listens on</td></tr>
+    <tr><td>Dashboard cookie rejected behind the proxy</td><td>Dashboard and API are on hostnames that are not the same site</td></tr>
+    <tr><td><code>FATAL: password authentication failed</code></td><td>The password in <code>.env</code> does not match the <code>flicked</code> role</td></tr>
+    <tr><td>Everything works until reboot</td><td>The services were never <code>systemctl enable</code>d</td></tr>
+  </tbody>
+</table>

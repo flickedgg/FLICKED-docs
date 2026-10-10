@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Matchmaking &amp; parties · FLICKED Docs</title>
+  <meta name="description" content="How FLICKED's matchmaker gathers parties by seats, checks they can be split into equal teams, drafts the most balanced split, and handles party lifecycle and invites.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Matchmaking &amp; parties · FLICKED Docs">
+  <meta property="og:description" content="How FLICKED's matchmaker gathers parties by seats, checks they can be split into equal teams, drafts the most balanced split, and handles party lifecycle and invites.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html" aria-current="page">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html" aria-current="page">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">Concepts</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">Matchmaking &amp; parties</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">How queueing with friends works, from the table to the draft. Every queue entry is a party, and a solo player is a party of one.</p>
+          </header>
+        <div class="prose-docs">
+<h2 id="the-decision-everything-follows-from">The decision everything follows from<a class="anchor" href="#the-decision-everything-follows-from" aria-label="Link to this section">#</a></h2>
+
+<blockquote><p><strong>Every queue entry is a party. A solo player is a party of one.</strong></p></blockquote>
+
+<p>The alternative was a nullable <code>PartyId</code> on a per-player queue row, with the matchmaker grouping
+rows back together on every pass. That keeps two shapes of queue entry alive forever, and every piece of
+matchmaking then has to handle both: gather, balance, requeue, the count the launcher shows, the rating
+window. The solo path is the one that gets tested while the party path is the one that breaks.</p>
+
+<p>Making the party the unit means there is one shape. The matchmaker never asks whether something is a
+party; it asks <strong>how many seats it takes</strong>. Solo queueing works because a solo player
+<em>is</em> a party, not because there is a branch for them.</p>
+
+<h2 id="data-model">Data model<a class="anchor" href="#data-model" aria-label="Link to this section">#</a></h2>
+
+<figure class="diagram not-prose"><pre class="mermaid">erDiagram
+    Player ||--o| PartyMember : "is in at most one"
+    Party  ||--|{ PartyMember : has
+    Party  ||--o{ PartyInvite : "has pending"
+    Player ||--o{ PartyInvite : "is invited by"
+    Party  ||--o| QueueEntry  : "queues as one"
+    Party  }o--|| Player      : "led by"</pre></figure>
+
+<h3 id="party">Party<a class="anchor" href="#party" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><code>Id</code></td><td>int</td><td></td></tr>
+    <tr><td><code>LeaderId</code></td><td>int → Player</td><td>Only the leader queues and invites</td></tr>
+    <tr><td><code>CreatedAt</code></td><td>timestamptz</td><td>For sweeping abandoned parties</td></tr>
+  </tbody>
+</table></div>
+
+<h3 id="partymember">PartyMember<a class="anchor" href="#partymember" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><code>PartyId</code></td><td>int → Party</td><td></td></tr>
+    <tr><td><code>PlayerId</code></td><td>int → Player, <strong>unique</strong></td><td>The database enforces one party per player</td></tr>
+    <tr><td><code>JoinedAt</code></td><td>timestamptz</td><td>Display order, and who leads next</td></tr>
+  </tbody>
+</table></div>
+
+<p><strong>That unique index is load-bearing.</strong> Two invites accepted in the same instant, or one
+accepted twice by a retrying client, cannot put a player in two parties: the second insert violates the
+index and the transaction fails. No lock, no check-then-act race, and it holds even if two API instances
+ever run at once.</p>
+
+<h3 id="partyinvite">PartyInvite<a class="anchor" href="#partyinvite" aria-label="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><code>PartyId</code></td><td>int → Party</td><td></td></tr>
+    <tr><td><code>ToPlayerId</code></td><td>int → Player</td><td>Unique together with <code>PartyId</code>, so inviting twice is a no-op</td></tr>
+    <tr><td><code>FromPlayerId</code></td><td>int → Player</td><td>Who asked, so the launcher can say</td></tr>
+    <tr><td><code>ExpiresAt</code></td><td>timestamptz</td><td>An invite nobody answers stops existing</td></tr>
+  </tbody>
+</table></div>
+
+<p><code>QueueEntry</code> points at a <code>PartyId</code>, still unique: a party is either waiting or it is not.
+The party has one queue time, so it has one widening rating window rather than five windows to
+reconcile.</p>
+
+<h2 id="party-rating">Party rating<a class="anchor" href="#party-rating" aria-label="Link to this section">#</a></h2>
+
+<p>Two numbers, used for different things, and the difference matters.</p>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <div class="card">
+    <p class="eyebrow">For finding opponents</p>
+    <p class="card-title mt-2">The highest rating in the party</p>
+    <p class="card-text">A 2600 player queueing with a 1200 friend is a 2600-strength player in the match. Averaging would hand them opponents their friend cannot play against.</p>
+  </div>
+  <div class="card">
+    <p class="eyebrow">For balancing teams</p>
+    <p class="card-title mt-2">The sum of members' ratings</p>
+    <p class="card-text">Team strength is the whole side, not its best player.</p>
+  </div>
+</div>
+
+<h2 id="gathering-a-match">Gathering a match<a class="anchor" href="#gathering-a-match" aria-label="Link to this section">#</a></h2>
+
+<p>The matchmaker anchors on the longest-waiting party and admits anyone whose rating gap fits inside
+<em>both</em> parties' windows. Windows widen by 25 points every ten seconds of waiting. Admitting somebody
+adds their whole party, so the group is assembled by seats rather than by heads.</p>
+
+<p>A set of parties is only usable if it satisfies <strong>two</strong> conditions:</p>
+
+<ol>
+  <li>the sizes sum to exactly the match size, and</li>
+  <li>those sizes can be split into two teams of equal size <strong>without splitting a party</strong>.</li>
+</ol>
+
+<aside class="callout callout-warn"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><div>
+  <p>The second is not implied by the first. Parties of <strong>4, 3 and 3</strong> sum to ten and cannot be
+  split into two fives: 4 + 3 is seven, and the remaining 3 is not five. That match must not be formed,
+  because forming it means splitting a party across teams, which is the one thing a party is for.</p>
+</div></aside>
+
+<p>The check is a subset-sum over at most ten items: a few hundred operations, a few times a minute. Not a
+cost worth optimising, but a check worth having.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">pseudocode</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">gather(waiting, size, now):
+    for anchor in waiting (oldest first):
+        group = [anchor]
+
+        for other in waiting, excluding anchor:
+            if group.seats + other.size &gt; size:  continue      # would overflow
+            gap     = |other.rating - anchor.rating|           # rating = party max
+            allowed = min(anchor.tolerance(now), other.tolerance(now))
+            if gap &gt; allowed: continue
+
+            group.add(other)
+            if group.seats == size and splittable(group, size / 2):
+                return group
+
+    return none        # nobody compatible yet; the windows widen and we try again</code></pre></div>
+
+<p><strong>"The match size" is not always ten.</strong> An instance that sets
+<a href="configuration.html#matchmaking"><code>Matchmaking:MinCompetitivePlayers</code></a> will, once the
+longest-waiting party has waited twenty seconds, also try eight, then six, down to that minimum. Both
+conditions still apply. Full matches are gathered for everybody first, and the sizes tried are always
+even.</p>
+
+<h2 id="drafting-the-teams">Drafting the teams<a class="anchor" href="#drafting-the-teams" aria-label="Link to this section">#</a></h2>
+
+<p>Among the splits that keep every party whole, the draft picks the one with the
+<strong>smallest difference in total rating</strong>. With at most ten parties there are at most 2<sup>10</sup>
+candidate splits, and far fewer of the right size. Enumerating them is cheaper than the database round
+trip before it, and unlike a snake draft it is <em>exact</em>: no arrangement of these parties balances
+better.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">pseudocode</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">balance(parties, teamSize):
+    best = none
+    for each subset of parties whose sizes total teamSize:
+        difference = |sum(ratings in subset) - sum(ratings not in subset)|
+        keep the subset with the smallest difference
+    return best as team A, the rest as team B</code></pre></div>
+
+<p>Solo players are parties of one, so this replaced the old snake draft for them too, and balances them
+better than it did.</p>
+
+<h2 id="after-a-cancelled-match">After a cancelled match<a class="anchor" href="#after-a-cancelled-match" aria-label="Link to this section">#</a></h2>
+
+<p>When somebody fails to accept, the players who did accept go back to the queue so they do not lose
+their place, with one rule for parties:</p>
+
+<blockquote><p><strong>A party is requeued only if every one of its members accepted.</strong> If one member did
+not, the party is dropped from the queue. Putting the rest back without them would break the party
+up.</p></blockquote>
+
+<h2 id="lifecycle">Lifecycle<a class="anchor" href="#lifecycle" aria-label="Link to this section">#</a></h2>
+
+<figure class="diagram not-prose"><pre class="mermaid">stateDiagram-v2
+    [*] --&gt; Solo: signed in
+    Solo --&gt; InParty: accepted an invite / invited someone
+    InParty --&gt; Solo: left, kicked, or disbanded
+    InParty --&gt; Queued: leader queues
+    Queued --&gt; InParty: leader cancels
+    Queued --&gt; InMatch: matched
+    InMatch --&gt; InParty: match over or cancelled
+    Solo --&gt; Queued: queues alone (a party of one)</pre></figure>
+
+<ul>
+  <li><strong>Membership changes dequeue the party.</strong> Somebody joining or leaving changes the seat
+  count and the party's rating, and a queue entry that no longer describes its party is a match formed on
+  stale information.</li>
+  <li><strong>Only the leader queues, invites and kicks.</strong> Not for hierarchy: otherwise two members
+  could queue for different modes at the same moment.</li>
+  <li><strong>If the leader leaves</strong>, the longest-standing remaining member becomes leader. An empty
+  party is deleted.</li>
+  <li><strong>Invites expire after two minutes</strong> and are swept by <code>MatchmakerJanitor</code>. A
+  stale invite offers a party that may have disbanded, filled up, or already be in a match.</li>
+</ul>
+
+<h2 id="the-party-api">The party API<a class="anchor" href="#the-party-api" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap">
+  <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/api/party</span><span class="endpoint-desc">Your party, its members, and your invites</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party</span><span class="endpoint-desc">Create one. Usually implicit: inviting creates it</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party/invite/{playerId}</span><span class="endpoint-desc">Leader only. The invitee must be a friend</span></div>
+  <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/api/party/invites/{partyId}/accept</span><span class="endpoint-desc">Accept an invite sent to you</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/party/invites/{partyId}</span><span class="endpoint-desc">Decline one sent to you, or cancel one you sent</span></div>
+  <div class="endpoint"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/party/members/{playerId}</span><span class="endpoint-desc">Leave (yourself) or kick (leader)</span></div>
+</div>
+
+<p>Rules worth stating, because they are security and not manners:</p>
+
+<ul>
+  <li><strong>Only friends can be invited.</strong> Without it, any signed-in account could spam invites at
+  any player id it can guess.</li>
+  <li><strong>A party holds at most as many members as a team</strong>, five for Competitive. Checked when
+  accepting, not when inviting, because the party may fill between the two.</li>
+  <li><strong>The leader check is server-side on every mutation.</strong> The launcher hides the buttons;
+  that is a courtesy, not a control.</li>
+  <li><strong>Pending invites are capped</strong> at ten per party, so nobody can make the poll expensive for
+  everyone the invites were sent to.</li>
+</ul>
+
+<h2 id="getting-it-to-the-launcher">Getting it to the launcher<a class="anchor" href="#getting-it-to-the-launcher" aria-label="Link to this section">#</a></h2>
+
+<p>Party state is not a new poll; it joins the one that already existed. The launcher polls
+<code>/api/social/state</code> every five seconds while focused and once a minute when not, with an ETag so
+unchanged state answers <code>304</code> with no body.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">GET /api/social/state</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;friends&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-punctuation">[</span> ... <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;requests&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span> ... <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;party&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;leaderId&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">12</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;members&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span> ... <span class="hljs-punctuation">]</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;invites&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-punctuation">[</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;partyId&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">7</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;fromName&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Nyx&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;expiresAt&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;...&quot;</span> <span class="hljs-punctuation">}</span> <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+
+<p>The ETag covers all four, so a party invite arriving makes the next poll return <code>200</code> and the
+whole panel updates together. One request means a friend list and a party list can never be drawn from
+different instants.</p>
+
+<h2 id="not-in-the-first-version">Not in the first version<a class="anchor" href="#not-in-the-first-version" aria-label="Link to this section">#</a></h2>
+
+<ul>
+  <li><strong>Party codes.</strong> A short code to join by, for when an invite is the wrong shape. Planned:
+  see the <a href="roadmap.html#planned">roadmap</a>.</li>
+  <li><strong>Party chat.</strong> A different problem with a different transport.</li>
+  <li><strong>Leader transfer by choice.</strong> Automatic transfer on leaving is enough.</li>
+  <li><strong>Cross-mode parties.</strong> The party queues for one mode, chosen by the leader.</li>
+  <li><strong>Presence.</strong> Belongs with the push channel that eventually replaces polling.</li>
+</ul>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="architecture.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Architecture</span>
+          </a>
+          <a href="rating.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] items-end text-right sm:col-start-2">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Next<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Rating</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#the-decision-everything-follows-from">The decision everything follows from</a>
+          <a class="toc-link" href="#data-model">Data model</a>
+          <a class="toc-link toc-sub" href="#party">Party</a>
+          <a class="toc-link toc-sub" href="#partymember">PartyMember</a>
+          <a class="toc-link toc-sub" href="#partyinvite">PartyInvite</a>
+          <a class="toc-link" href="#party-rating">Party rating</a>
+          <a class="toc-link" href="#gathering-a-match">Gathering a match</a>
+          <a class="toc-link" href="#drafting-the-teams">Drafting the teams</a>
+          <a class="toc-link" href="#after-a-cancelled-match">After a cancelled match</a>
+          <a class="toc-link" href="#lifecycle">Lifecycle</a>
+          <a class="toc-link" href="#the-party-api">The party API</a>
+          <a class="toc-link" href="#getting-it-to-the-launcher">Getting it to the launcher</a>
+          <a class="toc-link" href="#not-in-the-first-version">Not in the first version</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/docs/PARTY.md" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+  <script src="assets/diagrams.js"></script>
+</body>
+</html>

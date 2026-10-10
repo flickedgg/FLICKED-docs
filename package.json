@@ -1,0 +1,17 @@
+{
+  "name": "flicked-docs",
+  "private": true,
+  "type": "module",
+  "description": "Documentation site for FLICKED, the self-hostable competitive platform for CS2.",
+  "scripts": {
+    "build:html": "node build.mjs",
+    "build:css": "tailwindcss -i src/styles.css -o assets/styles.css --minify",
+    "build": "npm run build:html && npm run build:css",
+    "watch:css": "tailwindcss -i src/styles.css -o assets/styles.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "highlight.js": "^11.12.0",
+    "tailwindcss": "^4.3.3"
+  }
+}

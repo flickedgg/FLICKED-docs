@@ -1,0 +1,212 @@
+<!-- {
+  "title": "Running the CS2 server",
+  "lead": "Keeping the game side alive: the plugin chain, what breaks when Valve ships an update, and how to tell which link failed.",
+  "description": "Operate a CS2 server for FLICKED: the Metamod, CounterStrikeSharp and MatchZy chain, health checks, updating after CS2 patches, and common errors.",
+  "source": "docs/CS2-SERVER.md"
+} -->
+<p>This is the part FLICKED does not own. It coordinates servers, it does not install or provision them, so
+when a match will not start the cause is usually here rather than in the backend. Everything below has been
+hit in practice on a real server.</p>
+
+<h2>The chain</h2>
+
+<p>Four things have to load, in order, and each one fails differently:</p>
+
+<div class="grid gap-2 sm:grid-cols-4">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-4">
+    <p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">1 · Search path</p>
+    <p class="mt-1.5 text-[14.5px] font-semibold text-foreground">gameinfo.gi</p>
+    <p class="mt-1 text-[13px] leading-snug">Restored to stock by every <code>validate</code></p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-4">
+    <p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">2 · VDF loader</p>
+    <p class="mt-1.5 text-[14.5px] font-semibold text-foreground">Metamod</p>
+    <p class="mt-1 text-[13px] leading-snug">Removed if its folder is gone</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-4">
+    <p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">3 · .NET runtime</p>
+    <p class="mt-1.5 text-[14.5px] font-semibold text-foreground">CounterStrikeSharp</p>
+    <p class="mt-1 text-[13px] leading-snug">Breaks on CS2 updates (offsets)</p>
+  </div>
+  <div class="rounded-xl border border-primary/40 bg-primary/[.06] p-4">
+    <p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-primary-light">4 · Match plugin</p>
+    <p class="mt-1.5 text-[14.5px] font-semibold text-foreground">MatchZy</p>
+    <p class="mt-1 text-[13px] leading-snug">Refuses a second match per process</p>
+  </div>
+</div>
+
+<p>Learning this chain is most of the job: <strong>the symptom tells you which link broke</strong>, and each has
+a different fix.</p>
+
+<table>
+  <thead><tr><th>What the console says</th><th>Which link</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>Unknown command 'meta'</code></td><td>gameinfo.gi</td><td>Metamod never loaded at all</td></tr>
+    <tr><td><code>meta list</code> works, lists nothing useful</td><td>Metamod → CSS</td><td>The CSS loader is missing or failed</td></tr>
+    <tr><td><code>Unknown command 'css_plugins'</code></td><td>CounterStrikeSharp</td><td>CSS did not load, usually after a CS2 update</td></tr>
+    <tr><td><code>css_plugins list</code> works, no MatchZy</td><td>MatchZy</td><td>Plugin missing, or failed to load</td></tr>
+    <tr><td>MatchZy listed as <code>LOADED</code></td><td>None</td><td>The stack is healthy</td></tr>
+  </tbody>
+</table>
+
+<h2>Health check</h2>
+
+<p>Three commands in the server console, in this order. Stop at the first one that fails: that is your
+link.</p>
+
+<pre data-lang="text" data-title="server console">
+meta list              // is Metamod there, and does it list CounterStrikeSharp?
+css_plugins list       // is MatchZy LOADED?
+status                 // which map, how many players, is the port right
+</pre>
+
+<aside class="callout callout-warn"><div>
+  <p><strong>A server showing <code>Idle</code> does not mean the plugins work.</strong> The pool's liveness check is
+  a bare RCON <code>echo</code>, which succeeds on a server with no plugins at all. <code>Idle</code> proves three
+  things only: the machine is up, the port is open, and the RCON password is right. Whether MatchZy exists is a
+  question only the console answers.</p>
+</div></aside>
+
+<h2>Updating after a CS2 patch</h2>
+
+<p>CS2 updates itself for players. A dedicated server never does, and the symptom is <strong>"Your client is out
+of date"</strong> when someone tries to connect.</p>
+
+<ol class="steps">
+  <li>
+    <h4>Finish or cancel any live match</h4>
+    <p>FLICKED needs nothing from you here. After about ninety seconds of failed RCON pings the pool marks the
+    server <strong>Offline</strong> and stops handing it matches; it returns to <strong>Idle</strong> by itself once
+    the server answers again.</p>
+  </li>
+  <li>
+    <h4>Update with SteamCMD</h4>
+<pre data-lang="powershell" data-title="Windows">
+& C:\steamcmd\steamcmd.exe +force_install_dir C:\cs2-server +login anonymous +app_update 730 validate +quit
+</pre>
+<pre data-lang="bash" data-title="Linux">
+/opt/steamcmd/steamcmd.sh +force_install_dir /opt/cs2 +login anonymous +app_update 730 validate +quit
+</pre>
+  </li>
+  <li>
+    <h4>Put the Metamod search path back</h4>
+    <p><strong><code>validate</code> restores <code>gameinfo.gi</code> to stock, every time</strong>, which removes the
+    line that loads Metamod. This is the single most common reason a server comes back with no plugins.
+    Check before starting; nothing printed means the line is gone:</p>
+<pre data-lang="powershell" data-title="PowerShell">
+Select-String -Path C:\cs2-server\game\csgo\gameinfo.gi -Pattern metamod
+</pre>
+    <p>Add it <strong>above</strong> <code>Game csgo</code>. Below it, Metamod will not load.</p>
+<pre data-lang="text" data-title="game/csgo/gameinfo.gi">
+SearchPaths
+{
+    Game    csgo/addons/metamod
+    Game    csgo
+    Game    core
+</pre>
+  </li>
+  <li>
+    <h4>Check the stack came back</h4>
+    <p><code>meta list</code>, then <code>css_plugins list</code>. If <code>meta</code> works but
+    <code>css_plugins</code> does not, read on.</p>
+  </li>
+</ol>
+
+<h2>CounterStrikeSharp and CS2 updates</h2>
+
+<p><strong>Expect CSS to break after a significant CS2 update.</strong> It reads game memory through offsets and
+schema definitions that shift whenever Valve changes the binaries, so a CSS build is tied to a game build.
+When that happens:</p>
+
+<ol>
+  <li>Check CounterStrikeSharp's releases for a build naming the current CS2 version.</li>
+  <li>If there is none yet, the schema fix usually lands in its repository before a release is cut. Building
+  from source is a legitimate option and has been necessary before.</li>
+  <li>Until CSS loads, <strong>no match can run</strong>. The backend will keep trying, failing and releasing the
+  server, which is correct behaviour but looks alarming.</li>
+</ol>
+
+<p>There is normally a lag of hours to days after a major update. Nothing to fix on the FLICKED side; wait
+for the plugin ecosystem.</p>
+
+<aside class="callout callout-note"><div>
+  <p><strong>Careful with the addons folder.</strong> Deleting <code>addons/metamod</code> also removes the
+  <code>.vdf</code> file that loads CounterStrikeSharp, so Metamod comes back and CSS does not. If you reinstall
+  Metamod, reinstall CSS afterwards.</p>
+</div></aside>
+
+<h2>What FLICKED needs from a server</h2>
+
+<p>Less than you would expect. <strong><code>server.cfg</code> needs no FLICKED-specific lines.</strong></p>
+
+<ul>
+  <li><strong>RCON working</strong>, with the password you gave the dashboard. It is the only channel FLICKED
+  uses to control the server.</li>
+  <li><strong>MatchZy loaded</strong>, nothing more. FLICKED sends the match config URL, the authentication
+  header and the event-reporting settings over RCON when it starts a match.</li>
+</ul>
+
+<p>Two behaviours worth knowing, both verified against the plugin's source and recorded in
+<a href="matchzy.html">MatchZy integration</a>:</p>
+
+<ul>
+  <li><strong>MatchZy accepts one match per process.</strong> FLICKED therefore sends
+  <code>css_plugins reload MatchZy</code> before every match. That is deliberate, not a workaround to
+  remove.</li>
+  <li><strong>Events are never retried or deduplicated.</strong> <code>series_end</code> can arrive twice or not
+  at all, which is why finishing a match is a <a href="rating.html#applied-exactly-once">claim on a row</a>.</li>
+</ul>
+
+<h3>If you change the RCON password</h3>
+
+<p>Update it in the dashboard as well. The stored copy is encrypted and cannot be read back for comparison,
+so the only symptom of a mismatch is the server dropping to <strong>Offline</strong> while being perfectly
+healthy.</p>
+
+<h2>Errors seen in practice</h2>
+
+<table>
+  <thead><tr><th>Error</th><th>Where to look</th></tr></thead>
+  <tbody>
+    <tr><td><code>Your client is out of date</code> on connect</td><td>The server is behind; update it</td></tr>
+    <tr><td><code>Unknown command 'meta'</code></td><td>The <code>gameinfo.gi</code> search path</td></tr>
+    <tr><td><code>Unknown command 'css_plugins'</code></td><td>CSS not loaded, usually after a CS2 update</td></tr>
+    <tr><td><code>FATAL ERROR: CAppSystemDict: Unable to create interface Source2ServerConfig001</code></td><td>An invalid <code>gameinfo.gi</code> edit, or launching from the wrong directory. Compare against a stock copy first</td></tr>
+    <tr><td><code>Failed to initialize Steamworks SDK for gameserver</code></td><td>The server cannot find its Steam client files. Reinstall through SteamCMD into the same folder and launch from the server's own directory</td></tr>
+    <tr><td>Server window opens and closes instantly</td><td>Run it from a console so the error survives; on Windows check the Visual C++ redistributable is installed</td></tr>
+    <tr><td>MatchZy says a match is already running</td><td>The per-process flag; reload the plugin or restart the server</td></tr>
+    <tr><td>Match loads the wrong map</td><td>The server fetched a config it could not reach, or MatchZy was never reloaded. Check <code>Api:PublicUrl</code> is an address the <em>server</em> can resolve</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Read both logs.</strong> FLICKED's log says what it sent and whether RCON answered; the game console
+says what the server did with it. Most confusion comes from looking at only one of them.</p>
+
+<h2>Keep it running</h2>
+
+<p>A console window dies when you log out. On <strong>Windows</strong>, register it as a service with
+<a href="https://nssm.cc">NSSM</a>, or create a Task Scheduler task set to <em>Run whether user is logged on or
+not</em> with the trigger <em>At startup</em>. On <strong>Linux</strong>, use a systemd unit shaped like the ones in
+<a href="deploy-linux.html#5-run-both-as-services">Deploy on Linux</a>. It will reboot eventually, and you will
+not be watching.</p>
+
+<h3>Worth keeping a copy of</h3>
+
+<ul>
+  <li>The <code>gameinfo.gi</code> search path line, restored to stock by every <code>validate</code></li>
+  <li><code>server.cfg</code> and any other config you have edited</li>
+  <li>The <code>addons</code> folder, or a note of which Metamod and CSS versions are installed</li>
+  <li>Your launch command, including the GSLT token</li>
+</ul>
+
+<h2>Routine after every CS2 update</h2>
+
+<ol class="steps">
+  <li><strong>Update with SteamCMD</strong></li>
+  <li><strong>Re-add the Metamod line to <code>gameinfo.gi</code></strong></li>
+  <li><strong>Start the server</strong></li>
+  <li><strong><code>meta list</code>, then <code>css_plugins list</code></strong></li>
+  <li><strong>If CSS is broken, get a matching build before expecting matches</strong></li>
+  <li><strong>Confirm the dashboard shows the server Idle, then run one match and watch it load the map</strong>
+  <p>Step 6 is the only one that proves the whole path. The first five prove the server starts.</p></li>
+</ol>

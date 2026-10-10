@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Architecture · FLICKED Docs</title>
+  <meta name="description" content="How FLICKED fits together: the backend, launcher, dashboard, CS2 servers, sign-in, the match lifecycle, state machines, data model and trust boundaries.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Architecture · FLICKED Docs">
+  <meta property="og:description" content="How FLICKED fits together: the backend, launcher, dashboard, CS2 servers, sign-in, the match lifecycle, state machines, data model and trust boundaries.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html" aria-current="page">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html" aria-current="page">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">Concepts</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">Architecture</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">Four programs and a database. The backend owns every decision; everything else asks it. This is the map: what talks to what, in what order, and which piece is trusted with what.</p>
+          </header>
+        <div class="prose-docs">
+<aside class="callout callout-note"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div>
+  <p>If a diagram disagrees with the code, the code is right and this page is stale.</p>
+</div></aside>
+
+<h2 id="the-whole-system">The whole system<a class="anchor" href="#the-whole-system" aria-label="Link to this section">#</a></h2>
+
+<figure class="diagram not-prose"><pre class="mermaid">graph TB
+    subgraph players["Players"]
+        launcher["&lt;b&gt;Launcher&lt;/b&gt;&lt;br/&gt;Tauri · Rust + React&lt;br/&gt;queue, friends, history"]
+    end
+    subgraph admins["Admins"]
+        dashboard["&lt;b&gt;Dashboard&lt;/b&gt;&lt;br/&gt;Next.js&lt;br/&gt;server pool, news"]
+    end
+    subgraph public["Anyone"]
+        website["&lt;b&gt;Website&lt;/b&gt;&lt;br/&gt;Next.js&lt;br/&gt;marketing"]
+    end
+    backend["&lt;b&gt;Backend&lt;/b&gt;&lt;br/&gt;ASP.NET Core · C#&lt;br/&gt;every rule lives here"]
+    db[("&lt;b&gt;PostgreSQL&lt;/b&gt;&lt;br/&gt;players, matches,&lt;br/&gt;friendships, servers, queue")]
+    subgraph games["Community hardware"]
+        cs2["&lt;b&gt;CS2 servers&lt;/b&gt;&lt;br/&gt;Metamod + CounterStrikeSharp&lt;br/&gt;+ MatchZy"]
+    end
+    steam["&lt;b&gt;Steam&lt;/b&gt;&lt;br/&gt;OpenID + Web API"]
+
+    launcher --&gt;|"HTTPS · bearer token"| backend
+    dashboard --&gt;|"HTTPS · session cookie"| backend
+    website -.-&gt;|"static, no API calls yet"| backend
+    backend --&gt; db
+    backend --&gt;|"RCON · TCP 27015"| cs2
+    cs2 --&gt;|"match events · HTTPS"| backend
+    backend --&gt;|"verify sign-in, read profiles"| steam
+    launcher --&gt;|"sign in, in the system browser"| steam</pre></figure>
+
+<blockquote><p><strong>The rule that shapes everything:</strong> the backend decides, the clients display. No
+client is trusted with identity, match results, or who may do what.</p></blockquote>
+
+<h2 id="inside-the-backend">Inside the backend<a class="anchor" href="#inside-the-backend" aria-label="Link to this section">#</a></h2>
+
+<p>Controllers are thin: authenticate, validate, call a service, shape a response. Anything with a rule in
+it (who may claim a server, what a fair match is, when a lease has expired) lives in a service, so the
+matchmaker and an admin pressing a button go through exactly the same code.</p>
+
+<figure class="diagram not-prose"><pre class="mermaid">graph LR
+    subgraph controllers["Controllers · HTTP"]
+        auth["AuthController&lt;br/&gt;sign-in, sessions, /me"]
+        queue["QueueController&lt;br/&gt;join, accept, vote"]
+        party["PartyController&lt;br/&gt;invite, accept, kick"]
+        social["SocialController&lt;br/&gt;/api/social/state, polled"]
+        adminSrv["AdminServersController&lt;br/&gt;the pool, admin only"]
+        srvApi["MatchServerController&lt;br/&gt;ServersController&lt;br/&gt;called by CS2 servers"]
+    end
+    subgraph services["Services · the rules"]
+        currentPlayer["CurrentPlayer&lt;br/&gt;token or cookie → Player"]
+        serverAuth["ServerAuth&lt;br/&gt;X-Server-Token → GameServer"]
+        matchmaker["Matchmaker&lt;br/&gt;queue → matches, phases"]
+        partySvc["Parties&lt;br/&gt;who may join, leave, invite"]
+        pool["ServerPool&lt;br/&gt;claim · release · sweep"]
+        starter["MatchStarter&lt;br/&gt;token + RCON command"]
+        results["MatchResults&lt;br/&gt;finish once, apply ratings"]
+        rcon["Rcon&lt;br/&gt;Source RCON client"]
+    end
+    subgraph loops["Background loops"]
+        poolJanitor["PoolJanitor · 30s"]
+        mmJanitor["MatchmakerJanitor · 2s"]
+    end
+    db[("PostgreSQL · EF Core")]
+
+    auth --&gt; currentPlayer
+    queue --&gt; currentPlayer
+    queue --&gt; partySvc
+    party --&gt; partySvc
+    social --&gt; currentPlayer
+    adminSrv --&gt; starter
+    srvApi --&gt; serverAuth
+    srvApi --&gt; pool
+    srvApi --&gt; results
+    mmJanitor --&gt; matchmaker
+    mmJanitor --&gt; partySvc
+    mmJanitor --&gt; pool
+    mmJanitor --&gt; starter
+    poolJanitor --&gt; pool
+    pool --&gt; rcon
+    starter --&gt; rcon
+    services --&gt; db
+    loops --&gt; db</pre></figure>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Service</th><th>Responsibility</th></tr></thead>
+  <tbody>
+    <tr><td><code>CurrentPlayer</code></td><td>Turns a bearer token or the <code>flicked.session</code> cookie into a player</td></tr>
+    <tr><td><code>ServerAuth</code></td><td>Turns an <code>X-Server-Token</code> header into a registered game server</td></tr>
+    <tr><td><code>SteamOpenId</code> · <code>SteamProfile</code></td><td>Verifies sign-in with Steam server to server, and reads names and avatars</td></tr>
+    <tr><td><code>Matchmaker</code></td><td>Forms matches from the queue and advances accept and vote phases</td></tr>
+    <tr><td><code>Parties</code> · <code>Social</code></td><td>Party rules, and the combined friends and party state a screen draws</td></tr>
+    <tr><td><code>ServerPool</code></td><td>Claims, releases and sweeps servers on leases</td></tr>
+    <tr><td><code>MatchStarter</code></td><td>Mints the match token and sends the RCON command that loads the match</td></tr>
+    <tr><td><code>MatchResults</code> · <code>Rating</code></td><td>Finishes a match exactly once and applies the <a href="rating.html">rating</a> arithmetic</td></tr>
+    <tr><td><code>Secrets</code> · <code>ServerSecrets</code></td><td>Hash what you only check, encrypt what you have to replay</td></tr>
+    <tr><td><code>NewsPosts</code></td><td>Publishes, edits and removes news posts</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="signing-in">Signing in<a class="anchor" href="#signing-in" aria-label="Link to this section">#</a></h2>
+
+<p>Two clients, two ways to carry a session, one <code>Sessions</code> table.</p>
+
+<figure class="diagram not-prose"><pre class="mermaid">sequenceDiagram
+    participant L as Launcher (Rust)
+    participant B as Browser
+    participant API as Backend
+    participant S as Steam
+
+    Note over L: the launcher can hold a secret,&lt;br/&gt;a browser cannot
+    L-&gt;&gt;L: listen on 127.0.0.1:free port
+    L-&gt;&gt;B: open /auth/steam/login?port=…
+    B-&gt;&gt;API: GET /auth/steam/login
+    API-&gt;&gt;B: redirect to Steam
+    B-&gt;&gt;S: sign in (password never touches FLICKED)
+    S-&gt;&gt;B: redirect back with an assertion
+    B-&gt;&gt;API: GET /auth/steam/callback
+    API-&gt;&gt;S: check_authentication (server to server)
+    S--&gt;&gt;API: is_valid:true
+    API-&gt;&gt;API: find or create Player by Steam ID
+    API-&gt;&gt;B: redirect to 127.0.0.1:port?code=…
+    B-&gt;&gt;L: the one-time code
+    L-&gt;&gt;API: POST /auth/exchange { code }
+    API--&gt;&gt;L: session token (shown once)
+    L-&gt;&gt;L: store in the OS keychain</pre></figure>
+
+<ul>
+  <li><strong>Why a code rather than the token:</strong> URLs end up in browser history and logs. The code is
+  single-use, expires in two minutes, and the token only ever travels in a request the launcher makes
+  itself.</li>
+  <li><strong>The dashboard</strong> uses the same verification but ends differently: the backend sets an
+  HttpOnly cookie and redirects back, because a browser cannot keep a token safely.
+  <code>CurrentPlayer</code> accepts either.</li>
+  <li><strong>Verification is server to server.</strong> Everything arriving from the browser is a claim;
+  only Steam confirming it makes it true.</li>
+</ul>
+
+<h2 id="a-match-start-to-finish">A match, start to finish<a class="anchor" href="#a-match-start-to-finish" aria-label="Link to this section">#</a></h2>
+
+<figure class="diagram not-prose"><pre class="mermaid">sequenceDiagram
+    participant P as 10 launchers
+    participant API as Backend
+    participant MM as MatchmakerJanitor (2s)
+    participant Pool as ServerPool
+    participant CS as CS2 server + MatchZy
+
+    P-&gt;&gt;API: POST /api/queue
+    Note over MM: every 2 seconds
+    MM-&gt;&gt;MM: FormMatchesAsync&lt;br/&gt;group by rating window
+    MM--&gt;&gt;P: match found (polled)
+    P-&gt;&gt;API: POST /api/queue/accept ×10
+    MM-&gt;&gt;MM: all accepted → Voting
+    P-&gt;&gt;API: POST /api/queue/vote ×10
+    MM-&gt;&gt;MM: most votes wins → Pending
+    MM-&gt;&gt;Pool: ClaimAsync(mode, matchId)
+    Note over Pool: SELECT … FOR UPDATE SKIP LOCKED&lt;br/&gt;so two matches cannot take one server
+    Pool--&gt;&gt;MM: a server, now Reserved
+    MM-&gt;&gt;CS: RCON: matchzy_loadmatch_url url X-Match-Token token
+    CS-&gt;&gt;API: GET /api/matches/{id}/config
+    API--&gt;&gt;CS: roster, map, and where to report
+    CS-&gt;&gt;API: series_start
+    CS-&gt;&gt;API: going_live
+    API-&gt;&gt;Pool: MarkHosting (lease 5m → 90m)
+    Note over CS: the match is played
+    CS-&gt;&gt;API: round_end, map_result (score + stats)
+    CS-&gt;&gt;API: series_end
+    API-&gt;&gt;Pool: ReleaseAsync → Idle</pre></figure>
+
+<ul>
+  <li><strong>The config carries its own reporting settings</strong>, so a stock MatchZy needs nothing
+  configured by hand beyond an RCON password.</li>
+  <li><strong>MatchZy never retries and never deduplicates.</strong> So every handler is idempotent, and the
+  lease is the safety net: a lost <code>series_end</code> cannot strand a server.</li>
+</ul>
+
+<h2 id="two-state-machines">Two state machines<a class="anchor" href="#two-state-machines" aria-label="Link to this section">#</a></h2>
+
+<h3 id="a-match">A match<a class="anchor" href="#a-match" aria-label="Link to this section">#</a></h3>
+
+<figure class="diagram not-prose"><pre class="mermaid">stateDiagram-v2
+    direction LR
+    [*] --&gt; Accepting: a full match found,&lt;br/&gt;or a short one after 20s
+    Accepting --&gt; Voting: everyone accepted
+    Accepting --&gt; Cancelled: someone declined&lt;br/&gt;or the 20s ran out
+    Voting --&gt; Pending: map chosen (15s)
+    Pending --&gt; Live: going_live
+    Live --&gt; Finished: map_result / series_end
+    Pending --&gt; Cancelled: no server, or nobody connected
+    Finished --&gt; [*]
+    Cancelled --&gt; [*]</pre></figure>
+
+<h3 id="a-server-in-the-pool">A server in the pool<a class="anchor" href="#a-server-in-the-pool" aria-label="Link to this section">#</a></h3>
+
+<figure class="diagram not-prose"><pre class="mermaid">stateDiagram-v2
+    direction LR
+    [*] --&gt; Offline: registered by an admin
+    Offline --&gt; Idle: answers RCON (checked every 30s)
+    Idle --&gt; Offline: stops answering
+    Idle --&gt; Reserved: claimed for a match
+    Reserved --&gt; Hosting: going_live
+    Hosting --&gt; Idle: series_end
+    Reserved --&gt; Idle: lease expired (20m)
+    Hosting --&gt; Idle: lease expired (90m)</pre></figure>
+
+<p>The lease arrows are the ones that matter. Without them, one crashed server leaves the pool silently
+and forever.</p>
+
+<h2 id="the-data">The data<a class="anchor" href="#the-data" aria-label="Link to this section">#</a></h2>
+
+<figure class="diagram not-prose"><pre class="mermaid">erDiagram
+    Players ||--o{ Sessions : "signs in"
+    Players ||--o{ LoginCodes : "one-time"
+    Players ||--o| PartyMembers : "is in at most one"
+    Parties ||--|{ PartyMembers : "has"
+    Parties ||--o{ PartyInvites : "has pending"
+    Parties ||--o| QueueEntry : "waits, as one"
+    Players ||--o{ MatchPlayers : "plays"
+    Players ||--o{ Friendships : "requester / addressee"
+    Matches ||--|{ MatchPlayers : "has ten"
+    Matches ||--o| Servers : "is hosted on"
+
+    Players {
+        int Id PK
+        string SteamId UK
+        string Name
+        int Rating
+        bool IsAdmin
+    }
+    Matches {
+        int Id PK
+        string Map
+        int ScoreA
+        int ScoreB
+        enum Status
+        string ConfigTokenHash
+    }
+    MatchPlayers {
+        int MatchId PK, FK
+        int PlayerId PK, FK
+        int Team
+        int Kills
+        int Deaths
+        int RatingDelta
+    }
+    Servers {
+        int Id PK
+        string Host
+        int Port
+        string RconPasswordEncrypted
+        string TokenHash
+        enum Status
+        datetime LeaseUntil
+    }
+    QueueEntry {
+        int PartyId UK
+        enum Mode
+        datetime JoinedAt
+    }
+    Parties {
+        int Id PK
+        int LeaderId FK
+    }</pre></figure>
+
+<ul>
+  <li><strong>Every queue entry is a party</strong>, and somebody playing alone is a party of one. There is
+  no second shape of queue entry for solo players, so there is no solo path for the party path to
+  disagree with. See <a href="parties.html">Matchmaking &amp; parties</a>.</li>
+  <li><strong>Derived, never stored:</strong> a player's rank, win rate, K/D and damage per round; a match's
+  result; whether a server is free. Anything stored twice eventually disagrees with itself.</li>
+</ul>
+
+<h2 id="who-is-trusted-with-what">Who is trusted with what<a class="anchor" href="#who-is-trusted-with-what" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Credential</th><th>Held by</th><th>Stored as</th><th>Proves</th></tr></thead>
+  <tbody>
+    <tr><td>Session token</td><td>Launcher, in the OS keychain</td><td>SHA-256 hash</td><td>You are this player</td></tr>
+    <tr><td>Session cookie</td><td>Browser, HttpOnly</td><td>The same <code>Sessions</code> row</td><td>You are this admin</td></tr>
+    <tr><td>Server token</td><td>A CS2 server's config</td><td>SHA-256 hash</td><td>This is that server</td></tr>
+    <tr><td>Match token</td><td>Sent in the RCON command</td><td>SHA-256 hash</td><td>This is that one match</td></tr>
+    <tr><td>RCON password</td><td>The backend</td><td><strong>Encrypted</strong> (Data Protection)</td><td>Lets FLICKED command a server</td></tr>
+  </tbody>
+</table></div>
+
+<blockquote><p><strong>Hash what you only check; encrypt what you have to replay.</strong> An RCON password has to
+be sent again, so it cannot be hashed. Everything else is only ever compared, so it is never stored in a
+form anyone could use.</p></blockquote>
+
+<p><strong>The launcher's webview never sees a token.</strong> Rust holds it, makes the authenticated calls,
+and hands the interface names and numbers only, so a scripting bug in the UI cannot walk off with a
+session.</p>
+
+<h2 id="inside-the-launcher">Inside the launcher<a class="anchor" href="#inside-the-launcher" aria-label="Link to this section">#</a></h2>
+
+<figure class="diagram not-prose"><pre class="mermaid">graph LR
+    subgraph webview["Webview · React + TypeScript"]
+        views["Views&lt;br/&gt;Play · Matches · Friends&lt;br/&gt;Leaderboard · News"]
+        hooks["Hooks&lt;br/&gt;useSession · useSocial&lt;br/&gt;useQueue · useParty · usePresence"]
+        api["lib/api.ts&lt;br/&gt;public endpoints"]
+    end
+    subgraph rust["Rust · src-tauri"]
+        authrs["auth.rs&lt;br/&gt;Steam sign-in, keychain"]
+        apirs["api.rs&lt;br/&gt;authenticated calls"]
+        presence["presence.rs&lt;br/&gt;Discord rich presence"]
+    end
+    backend["Backend"]
+
+    views --&gt; hooks
+    hooks --&gt; api
+    hooks --&gt;|"invoke()"| authrs
+    hooks --&gt;|"invoke()"| apirs
+    api --&gt;|"news, leaderboard"| backend
+    apirs --&gt;|"+ bearer token"| backend
+    authrs --&gt; backend</pre></figure>
+
+<p><strong>The split:</strong> public data (news, leaderboard) is fetched straight from the webview; anything
+about <em>you</em> goes through Rust, because that is where the token lives. Each authenticated endpoint
+gets its own command rather than one general "call this path", so a compromised webview cannot borrow the
+token freely.</p>
+
+<h2 id="inside-the-dashboard">Inside the dashboard<a class="anchor" href="#inside-the-dashboard" aria-label="Link to this section">#</a></h2>
+
+<figure class="diagram not-prose"><pre class="mermaid">graph LR
+    routes["app/servers · app/news&lt;br/&gt;server components"]
+    shell["dash-shell.tsx&lt;br/&gt;the admin gate"]
+    session["lib/session.ts&lt;br/&gt;forwards the cookie"]
+    panels["servers-panel · news-panel&lt;br/&gt;client components"]
+    libs["lib/servers.ts · lib/news.ts&lt;br/&gt;credentials: include"]
+    backend["Backend&lt;br/&gt;/api/admin/servers&lt;br/&gt;/api/admin/news"]
+
+    routes --&gt; shell --&gt; session --&gt; backend
+    routes --&gt; panels --&gt; libs --&gt; backend</pre></figure>
+
+<p><strong>The gate is a component, not a layout.</strong> <code>DashShell</code> wraps each page rather than
+<code>app/layout.tsx</code> doing the checking, because the gate has to know which page was asked for: that
+is the <code>returnTo</code> Steam sends somebody back to.</p>
+
+<aside class="callout callout-tip"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg><div>
+  <p><strong>Two gotchas that cost time here:</strong></p>
+  <p>A <strong>server component's</strong> fetch does not carry the browser's cookies. They have to be read
+  with <code>next/headers</code> and forwarded by hand, or every request looks signed out.</p>
+  <p>A <strong>client component's</strong> fetch needs <code>credentials: "include"</code>, and the backend must
+  name the dashboard's origin in CORS: a wildcard is refused once credentials are involved.</p>
+</div></aside>
+
+<p>The admin check runs on the server on every request, with no caching, so a revoked session or a
+removed admin flag takes effect immediately.</p>
+
+<h2 id="what-runs-on-a-timer">What runs on a timer<a class="anchor" href="#what-runs-on-a-timer" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Loop</th><th class="num">Every</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>MatchmakerJanitor</code></td><td class="num">2s</td><td>Form matches, advance accept and vote phases, start ready matches, sweep expired party invites</td></tr>
+    <tr><td><code>PoolJanitor</code></td><td class="num">30s</td><td>Reclaim expired leases, check each server over RCON</td></tr>
+  </tbody>
+</table></div>
+
+<p>Both open a fresh DI scope per pass (a <code>BackgroundService</code> is a singleton and must never hold a
+<code>DbContext</code>) and swallow exceptions, because one bad pass must not end the loop for the life of
+the process.</p>
+
+<h2 id="where-the-seams-are">Where the seams are<a class="anchor" href="#where-the-seams-are" aria-label="Link to this section">#</a></h2>
+
+<p>Things deliberately left as boundaries, so they can be replaced without touching the rest:</p>
+
+<ul>
+  <li><strong>The pool answers one question:</strong> "give me a server for this match". Today the answer
+  comes from a table of registered servers. Automatic provisioning would be another way a row appears, and
+  matchmaking would never notice.</li>
+  <li><strong>MatchZy sits behind two endpoints</strong>, a config and an event feed. A custom
+  CounterStrikeSharp plugin would speak the same two.</li>
+  <li><strong>Presence and the queue are polled today.</strong> SignalR would replace the polling without
+  changing what the screens render.</li>
+</ul>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="configuration.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Configuration</span>
+          </a>
+          <a href="parties.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] items-end text-right sm:col-start-2">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Next<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Matchmaking &amp; parties</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#the-whole-system">The whole system</a>
+          <a class="toc-link" href="#inside-the-backend">Inside the backend</a>
+          <a class="toc-link" href="#signing-in">Signing in</a>
+          <a class="toc-link" href="#a-match-start-to-finish">A match, start to finish</a>
+          <a class="toc-link" href="#two-state-machines">Two state machines</a>
+          <a class="toc-link toc-sub" href="#a-match">A match</a>
+          <a class="toc-link toc-sub" href="#a-server-in-the-pool">A server in the pool</a>
+          <a class="toc-link" href="#the-data">The data</a>
+          <a class="toc-link" href="#who-is-trusted-with-what">Who is trusted with what</a>
+          <a class="toc-link" href="#inside-the-launcher">Inside the launcher</a>
+          <a class="toc-link" href="#inside-the-dashboard">Inside the dashboard</a>
+          <a class="toc-link" href="#what-runs-on-a-timer">What runs on a timer</a>
+          <a class="toc-link" href="#where-the-seams-are">Where the seams are</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/docs/ARCHITECTURE.md" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+  <script src="assets/diagrams.js"></script>
+</body>
+</html>

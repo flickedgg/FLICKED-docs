@@ -1,0 +1,267 @@
+<!-- {
+  "title": "Deploy on Windows",
+  "lead": "Build FLICKED and run it somewhere your friends can reach: one Windows VPS running the CS2 server, the backend and the dashboard together.",
+  "description": "Host FLICKED on a Windows VPS: build the API, launcher and dashboard, install Postgres, configure the three addresses, open ports and run as a service.",
+  "source": "docs/DEPLOY.md"
+} -->
+<p>Everything works the same spread across several machines; the addresses just stop being the same one.
+On Linux? <a href="deploy-linux.html">Deploy on Linux</a> covers the same deployment with systemd and HTTPS
+in the main path.</p>
+
+<aside class="callout callout-warn"><div>
+  <p><strong>Read <a href="security.html">Security</a> before you invite anyone.</strong> This setup runs over plain
+  HTTP, which is fine for testing among people you know and not fine for anything else.</p>
+</div></aside>
+
+<h2>What you need</h2>
+
+<table>
+  <thead><tr><th>Requirement</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>A Windows VPS</td><td>The one already running your CS2 server is fine</td></tr>
+    <tr><td>.NET 10 SDK</td><td>On your development machine only. The VPS needs nothing</td></tr>
+    <tr><td>Node.js LTS</td><td>On both, if you want the dashboard</td></tr>
+    <tr><td>A Steam Web API key</td><td>Free, from <a href="https://steamcommunity.com/dev/apikey">steamcommunity.com/dev/apikey</a></td></tr>
+    <tr><td>Your SteamID64</td><td>So you can reach the dashboard as an admin</td></tr>
+  </tbody>
+</table>
+
+<h2>The three addresses</h2>
+
+<p>Nearly every deployment problem is one of these being wrong, and each fails quietly.</p>
+
+<pre data-lang="text" data-title="what talks to what">
+  a friend's PC                    your VPS                       Steam
+  ─────────────                    ────────                       ─────
+  launcher  ──── http ────►  Flicked.Api :5165  ──── RCON ────►  CS2 + MatchZy
+     │                              │  ▲                              │
+     │                        Postgres  └────── match events ─────────┘
+     │
+     └──── steam://connect ──────────────────────────────────►  CS2 server
+</pre>
+
+<table>
+  <thead><tr><th>Setting</th><th>Who reads it</th><th>If it is wrong</th></tr></thead>
+  <tbody>
+    <tr><td><code>Steam:PublicUrl</code></td><td>A friend's <strong>browser</strong>, signing in</td><td>Sign-in sends them back to their own PC</td></tr>
+    <tr><td><code>Api:PublicUrl</code></td><td>The <strong>CS2 server</strong>, fetching a match config</td><td>The server fetches nothing and stays on its old map, with no error anywhere</td></tr>
+    <tr><td><code>FLICKED_API</code></td><td>The <strong>launcher</strong>, compiled in</td><td>The launcher looks for FLICKED on the player's own machine</td></tr>
+  </tbody>
+</table>
+
+<p>All three must be your VPS address. Replace <code>&lt;vps-address&gt;</code> below with it.</p>
+
+<h2>Part 1: Build</h2>
+
+<p>All three are built on your development machine. Nothing is compiled on the VPS.</p>
+
+<h3>The API</h3>
+
+<pre data-lang="cmd" data-title="Command Prompt">
+dotnet publish backend/Flicked.Api -c Release -r win-x64 --self-contained
+</pre>
+
+<p>Output lands in <code>backend/Flicked.Api/bin/Release/net10.0/win-x64/publish/</code>.
+<code>--self-contained</code> bundles the .NET runtime, so the VPS needs no SDK. It is about 115 MB the first
+time; later updates are <a href="#upgrading">two files</a>.</p>
+
+<h3>The launcher</h3>
+
+<p>The API address is compiled in, so a build made on your machine points at your machine unless you say
+otherwise:</p>
+
+<pre data-lang="cmd" data-title="Command Prompt">
+set FLICKED_API=http://<vps-address>:5165
+cd launcher
+npm install
+npm run tauri build
+</pre>
+
+<p>Installers land in <code>launcher/src-tauri/target/release/bundle/</code>: an <code>.exe</code> (NSIS) and an
+<code>.msi</code>, the same app either way.</p>
+
+<aside class="callout callout-tip"><div>
+  <p><strong>Check the build before handing it out.</strong> One variable feeds both the Rust side and the
+  webview so they cannot disagree, but confirming costs nothing:</p>
+  <p><code>findstr /C:"&lt;vps-address&gt;" launcher\src-tauri\target\release\launcher.exe</code></p>
+</div></aside>
+
+<p>Friends will see <strong>"Windows protected your PC"</strong> when they run it. That is SmartScreen reacting
+to an unsigned installer, not to anything being wrong: <em>More info</em>, then <em>Run anyway</em>. Signing
+needs a paid certificate.</p>
+
+<h3>The dashboard</h3>
+
+<pre data-lang="cmd" data-title="Command Prompt">
+cd dashboard
+npm install
+set NEXT_PUBLIC_API_URL=http://<vps-address>:5165
+npx next build
+</pre>
+
+<p>The build produces a standalone server. Assemble what the VPS needs:</p>
+
+<pre data-lang="text" data-title="deploy folder">
+.next/standalone/*   →  the server and its dependencies
+.next/static/*       →  into <deploy>/.next/static
+public/*             →  into <deploy>/public
+</pre>
+
+<p>That folder runs with Node alone, with no <code>npm install</code> on the VPS.</p>
+
+<aside class="callout callout-warn"><div>
+  <p><strong>The dashboard has to run on the VPS</strong>, not on your PC. Its session cookie is
+  <code>SameSite=Lax</code>, so a browser will not send it from <code>localhost:3000</code> to an API on another
+  host: you would sign in successfully and then have every request rejected. Same host on a different port
+  is fine, because cookies ignore ports.</p>
+</div></aside>
+
+<h2>Part 2: Deploy</h2>
+
+<ol class="steps">
+  <li>
+    <h4>Install Postgres</h4>
+    <p>Docker Desktop on a Windows VPS usually cannot get the nested virtualization it needs, so install
+    Postgres natively with the <strong>EnterpriseDB installer</strong>. It runs as a service and starts with
+    the machine. Then, in <strong>SQL Shell (psql)</strong>:</p>
+<pre data-lang="sql" data-title="psql">
+CREATE USER flicked WITH PASSWORD 'pick-a-real-password';
+CREATE DATABASE flicked OWNER flicked;
+</pre>
+    <p>Create no tables. The API applies its own migrations on startup and seeds the map pool.</p>
+  </li>
+  <li>
+    <h4>Copy the API across</h4>
+    <p>Put the published folder anywhere on the VPS. These examples use <code>C:\flicked\api</code>.</p>
+  </li>
+  <li>
+    <h4>Configure it</h4>
+    <p>Create <code>.env</code> <strong>next to <code>Flicked.Api.exe</code></strong>. It is read on startup and
+    belongs in no repository. Every key is described in <a href="configuration.html">Configuration</a>.</p>
+<pre data-lang="ini" data-title="C:\flicked\api\.env">
+# The database you just created.
+ConnectionStrings:Flicked=Host=localhost;Port=5432;Database=flicked;Username=flicked;Password=<db-password>
+
+# This machine, as the outside world sees it. Never localhost: one of these is
+# read by a browser on someone else's PC, the other by the CS2 server.
+Steam:PublicUrl=http://<vps-address>:5165
+Api:PublicUrl=http://<vps-address>:5165
+
+# Where the dashboard runs. Needed for CORS and for the sign-in redirect.
+Dashboard:Url=http://<vps-address>:3000
+
+# Listen on every interface. The default is localhost only, which leaves the
+# API invisible from outside however the firewall is set.
+urls=http://0.0.0.0:5165
+
+STEAM_API_KEY=<your-steam-web-api-key>
+
+# Comma-separated SteamID64s allowed into the dashboard.
+FLICKED_ADMIN_STEAM_IDS=<your-steamid64>
+
+# Encryption keys for stored RCON passwords. Back this folder up.
+DataProtection:KeyPath=C:\flicked\keys
+
+# Optional, while testing: play with fewer people than a real match needs.
+# Matchmaking:CompetitivePlayers=2
+
+# Optional, for a small community: start short-handed rather than wait for a
+# tenth player who is not coming.
+# Matchmaking:MinCompetitivePlayers=6
+</pre>
+  </li>
+  <li>
+    <h4>Open the ports</h4>
+    <p>In an <strong>administrator PowerShell</strong> on the VPS:</p>
+<pre data-lang="powershell" data-title="PowerShell (admin)">
+New-NetFirewallRule -DisplayName "FLICKED API" -Direction Inbound -Protocol TCP -LocalPort 5165 -Action Allow
+New-NetFirewallRule -DisplayName "FLICKED Dashboard" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow
+</pre>
+    <p>Many providers have a second firewall in their web panel. If a port still looks closed, check
+    there.</p>
+  </li>
+  <li>
+    <h4>Start the API</h4>
+    <p>Run <code>Flicked.Api.exe</code>. The first start applies the migrations; watch that it gets through
+    them without an exception. Then test it <strong>from your own PC</strong>, not from the VPS, because a
+    service can answer itself while being unreachable from outside:</p>
+<pre data-lang="bash" data-title="Your PC">
+curl http://<vps-address>:5165/api/news
+</pre>
+  </li>
+  <li>
+    <h4>Start the dashboard</h4>
+<pre data-lang="powershell" data-title="PowerShell">
+cd C:\flicked\dashboard
+$env:PORT=3000; $env:HOSTNAME="0.0.0.0"; node server.js
+</pre>
+    <p><code>HOSTNAME=0.0.0.0</code> matters for the same reason <code>urls</code> did: Next binds to localhost
+    otherwise.</p>
+  </li>
+  <li>
+    <h4>Add your CS2 server</h4>
+    <p>Open <code>http://&lt;vps-address&gt;:3000</code>, sign in with Steam, and add the server with its host,
+    port and RCON password. FLICKED handles the rest: it reloads MatchZy before each match, and sends the
+    config URL and event settings over RCON, so <code>server.cfg</code> needs no FLICKED-specific lines.</p>
+    <p>A server that answers the pool's RCON ping shows as <strong>Idle</strong> and can host matches. One that
+    does not is <strong>Offline</strong> and is skipped until it answers. For the game side, see
+    <a href="cs2-server.html">Running the CS2 server</a>.</p>
+  </li>
+</ol>
+
+<h3>Keep it running</h3>
+
+<p>A console window dies when you log out of the VPS. Install <a href="https://nssm.cc">NSSM</a> and register
+the API as a service:</p>
+
+<pre data-lang="cmd" data-title="Command Prompt (admin)">
+nssm install FlickedApi C:\flicked\api\Flicked.Api.exe
+nssm set FlickedApi AppDirectory C:\flicked\api
+nssm start FlickedApi
+</pre>
+
+<h2>Upgrading</h2>
+
+<p>After the first deployment you rarely need the whole 115 MB again. Unless the dependencies changed, a new
+backend build is <strong>two files</strong>:</p>
+
+<ol>
+  <li><code>dotnet publish</code> as above, on your machine</li>
+  <li>stop the API on the VPS</li>
+  <li>copy <code>Flicked.Api.dll</code> and <code>Flicked.Api.pdb</code> over the old ones</li>
+  <li>start it; any new migrations apply on startup</li>
+</ol>
+
+<p><strong>Back up the database first when an upgrade migrates data.</strong> From PowerShell, not psql, since
+<code>pg_dump</code> is a program rather than a psql command:</p>
+
+<pre data-lang="powershell" data-title="PowerShell">
+$pg = Get-ChildItem "C:\Program Files\PostgreSQL\*\bin\pg_dump.exe" | Select-Object -First 1
+& $pg.FullName -U postgres -d flicked -f C:\backup.sql
+</pre>
+
+<aside class="callout callout-note"><div>
+  <p><strong>Update the API before handing out a launcher built against it.</strong> The two talk over
+  endpoints that change together, so a launcher from one side of an update and an API from the other will
+  not agree.</p>
+</div></aside>
+
+<h2>Troubleshooting</h2>
+
+<p>Every one of these has happened during a real setup.</p>
+
+<table>
+  <thead><tr><th>Symptom</th><th>Cause</th></tr></thead>
+  <tbody>
+    <tr><td>API unreachable from outside, firewall looks open</td><td><code>urls=http://0.0.0.0:5165</code> missing, so it bound to localhost</td></tr>
+    <tr><td>Server never loads the voted map, console shows nothing</td><td><code>Api:PublicUrl</code> is localhost or unreachable, so the server fetched its config from itself</td></tr>
+    <tr><td>Sign-in sends a friend back to their own PC</td><td><code>Steam:PublicUrl</code> is localhost</td></tr>
+    <tr><td>News and leaderboard empty in the launcher, everything else fine</td><td>The launcher was built without <code>FLICKED_API</code></td></tr>
+    <tr><td>Dashboard signs in, then every request fails</td><td>The dashboard is not on the same host as the API (<code>SameSite=Lax</code>)</td></tr>
+    <tr><td><code>Server X has an unreadable RCON password</code></td><td>The database moved between machines without its <code>DataProtection</code> keys</td></tr>
+    <tr><td>Match timers start part-way through, or sit at zero</td><td>The VPS clock or the player's is wrong; sync both</td></tr>
+    <tr><td><code>invalid command \...</code></td><td>You are in psql and typed a program name; programs belong in PowerShell</td></tr>
+    <tr><td><code>The ampersand (&amp;) character is not allowed</code></td><td>Two PowerShell commands on one line; separate them with <code>;</code></td></tr>
+    <tr><td><code>-U is not recognized</code> after a quoted path</td><td>PowerShell needs <code>&amp; </code> in front of a quoted path to run it</td></tr>
+  </tbody>
+</table>

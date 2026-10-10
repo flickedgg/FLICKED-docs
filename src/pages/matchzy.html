@@ -1,0 +1,170 @@
+<!-- {
+  "title": "MatchZy integration",
+  "lead": "What FLICKED needs from the CS2 side, checked against MatchZy's source and verified on a real server rather than written from memory.",
+  "description": "How FLICKED drives MatchZy: loading a match over RCON, the config it serves, the events it receives, and the plugin quirks it handles.",
+  "source": "docs/MATCHZY.md"
+} -->
+<p><a href="https://github.com/shobhit-pathak/MatchZy">MatchZy</a> is MIT licensed and does the hard part of running
+a CS2 match: knife rounds, pauses, demos, the veto flow. FLICKED would not have a working match without it.
+The quirks recorded here are where a plugin serving everybody meets a backend that wants one particular
+thing. They are written down so FLICKED handles them correctly, not as complaints.</p>
+
+<aside class="callout callout-note"><div>
+  <p>Read on 2026-09-23 against MatchZy's <code>dev</code> branch. If something here disagrees with the plugin in
+  practice, the source wins.</p>
+</div></aside>
+
+<h2>How a match starts</h2>
+
+<p>MatchZy loads a match from JSON, from a local file or over HTTP. <code>matchzy_loadmatch_url</code> does a
+<strong>GET</strong> and accepts one optional custom header, so FLICKED can require a token on its config
+endpoint rather than leaving it open.</p>
+
+<pre data-lang="text" data-title="MatchZy commands">
+matchzy_loadmatch <filepath>                      # relative to csgo/
+matchzy_loadmatch_url <url> [header name] [header value]
+</pre>
+
+<p>So the flow is: claim a server from the pool, then send it over RCON:</p>
+
+<pre data-lang="text" data-title="sent over RCON by MatchStarter">
+css_plugins reload MatchZy
+matchzy_loadmatch_url "https://api.example/api/matches/27/config" "X-Match-Token" "<token>"
+</pre>
+
+<h3>The config FLICKED serves</h3>
+
+<p><code>GET /api/matches/{id}/config</code>, authenticated by the per-match <code>X-Match-Token</code>. It is not
+public, because it lists every player's Steam ID.</p>
+
+<pre data-lang="json" data-title="GET /api/matches/27/config">
+{
+  "matchid": 27,
+  "team1": {
+    "name": "Team A",
+    "players": { "76561198xxxxxxxxxx": "PlayerNickname" }
+  },
+  "team2": { "name": "Team B", "players": { } },
+  "num_maps": 1,
+  "maplist": ["de_mirage"],
+  "map_sides": ["knife"],
+  "players_per_team": 5,
+  "cvars": { "hostname": "FLICKED #27" }
+}
+</pre>
+
+<ul>
+  <li><strong>Players are keyed by Steam64 ID</strong>, the only identifier MatchZy accepts. FLICKED already
+  stores <code>Player.SteamId</code>.</li>
+  <li><strong><code>matchid</code> is always sent</strong>, so events can be tied to a FLICKED match.</li>
+  <li><strong>One map per match</strong> for now: <code>num_maps: 1</code>, with the voted map in
+  <code>maplist</code>. <code>map_sides: ["knife"]</code> gives a knife round.</li>
+  <li><strong>The config carries its own reporting settings</strong>, so the server knows where to send events
+  and which token to attach without anything in <code>server.cfg</code>.</li>
+</ul>
+
+<h2>How a match reports back</h2>
+
+<p>Events are <strong>POSTed as JSON</strong> to <code>/api/matches/events</code>, with the configured header
+attached. The endpoint accepts either the server's own <code>X-Server-Token</code> or the per-match
+<code>X-Match-Token</code> the config handed out, and checks that the server reporting is the one the match was
+given to.</p>
+
+<pre data-lang="text" data-title="server cvars (set by FLICKED, not by hand)">
+matchzy_remote_log_url <url>
+matchzy_remote_log_header_key <name>
+matchzy_remote_log_header_value <token>
+</pre>
+
+<aside class="callout callout-warn"><div>
+  <p><strong>There is no retry and no deduplication.</strong> If FLICKED is down or slow, that event is gone. So the
+  endpoint must be quick, must tolerate the same event twice, and <strong>the server lease stays the safety
+  net</strong>: a missed <code>series_end</code> must not strand a server, which <code>ServerPool.SweepAsync</code>
+  covers.</p>
+</div></aside>
+
+<h3>The events</h3>
+
+<p>Every payload has an <code>event</code> field, and every match-scoped one has <code>matchid</code>.</p>
+
+<table>
+  <thead><tr><th>event</th><th>When</th><th>Beyond event and matchid</th></tr></thead>
+  <tbody>
+    <tr><td><code>series_start</code></td><td>Match config loaded</td><td><code>team1</code>, <code>team2</code>, <code>num_maps</code></td></tr>
+    <tr><td><code>going_live</code></td><td>Knife done, match starts</td><td><code>map_number</code></td></tr>
+    <tr><td><code>round_end</code></td><td>Every round</td><td><code>round_number</code>, <code>reason</code>, <code>winner</code>, <code>team1</code>, <code>team2</code> with player stats</td></tr>
+    <tr><td><code>map_result</code></td><td>Map finished</td><td><code>winner</code>, <code>team1</code>, <code>team2</code>. <strong><code>players</code> is always empty</strong></td></tr>
+    <tr><td><code>series_end</code></td><td>Match over</td><td><code>winner</code>, series scores. No per-player stats and no map score</td></tr>
+    <tr><td><code>map_picked</code> / <code>map_vetoed</code> / <code>side_picked</code></td><td>Veto, if used</td><td><code>team</code>, <code>map_name</code>, <code>side</code></td></tr>
+    <tr><td><code>player_disconnect</code></td><td>A player leaves</td><td><code>player</code></td></tr>
+    <tr><td><code>demo_upload_ended</code></td><td>Demo uploaded</td><td><code>filename</code>, <code>success</code></td></tr>
+  </tbody>
+</table>
+
+<p>Team objects in round and map events carry <code>score</code> and a <code>players</code> array where each player has
+<code>steamid</code>, <code>name</code> and a <code>stats</code> object: <code>kills</code>, <code>deaths</code>,
+<code>assists</code>, <code>damage</code>, <code>headshot_kills</code>, <code>rounds_played</code>, utility figures,
+multi-kills and clutches.</p>
+
+<h3>What FLICKED does with them</h3>
+
+<table>
+  <thead><tr><th>Event</th><th>Effect</th></tr></thead>
+  <tbody>
+    <tr><td><code>going_live</code></td><td>Match becomes <strong>Live</strong>; the server moves to <strong>Hosting</strong> and its lease extends to 90 minutes</td></tr>
+    <tr><td><code>round_end</code></td><td>Overwrites each player's figures with the cumulative totals so far</td></tr>
+    <tr><td><code>map_result</code></td><td>Records the score, and stats if it ever carries any</td></tr>
+    <tr><td><code>series_end</code></td><td>Finishes the match <a href="rating.html#applied-exactly-once">exactly once</a>, applies ratings, releases the server to <strong>Idle</strong></td></tr>
+  </tbody>
+</table>
+
+<h2>Quirks FLICKED handles</h2>
+
+<h3>map_result sends no player stats</h3>
+
+<p>Observed on FLICKED's own server on 24 September 2026, at the end of a real match:</p>
+
+<pre data-lang="json" data-title="map_result, team1">
+"team1":{"series_score":1,"score":13,"score_ct":0,"score_t":0,"players":[],"name":"Team A"}
+</pre>
+
+<p>The players array is empty, although the documentation says it carries every player's stats. It is
+plugin bug <a href="https://github.com/shobhit-pathak/MatchZy/issues/405">#405</a>, which also reports that
+<code>round_end</code> populates <code>players</code> correctly. <strong>So FLICKED takes player stats from
+<code>round_end</code>.</strong> The figures are cumulative, so the last round's numbers are the match totals.
+<code>map_result</code> still applies stats when it has any, so a fixed plugin needs no change.</p>
+
+<p>Note also that <code>score_ct</code> and <code>score_t</code> are <code>0</code> even though <code>score</code> is right.
+Only <code>score</code> is trustworthy.</p>
+
+<h3>One match per process</h3>
+
+<p><code>isMatchSetup</code> is set when a config loads and never set back, so every later
+<code>matchzy_loadmatch_url</code> is refused with "A match is already setup". <code>css_endmatch</code> does not
+clear it. FLICKED sends <code>css_plugins reload MatchZy</code> before each match, which builds a fresh plugin
+instance.</p>
+
+<h3>Refusals are invisible over RCON</h3>
+
+<p>MatchZy logs a refusal to the server console, so the RCON reply looks like success. FLICKED assumes
+nothing from an empty reply, and waits for the map to actually change before anyone is given the
+address.</p>
+
+<h3>Smaller things</h3>
+
+<ul>
+  <li><strong><code>matchid</code> arrives as a number in events</strong>, although the config accepts a string.
+  FLICKED reads it leniently, or every event would be rejected as a type error.</li>
+  <li><strong><code>css_endmatch</code> does not send <code>series_end</code>.</strong> The admin command resets to
+  warmup; the event only fires when a match ends naturally. Ending a match by hand is not a way to test the
+  reporting path.</li>
+  <li><strong><code>winner</code></strong> is <code>{ "side": "...", "team": "..." }</code>.</li>
+</ul>
+
+<h2>A FLICKED plugin, later</h2>
+
+<p>The roadmap's plan is to <strong>fork MatchZy</strong> rather than start again: keep what works, and change
+the parts that only matter to FLICKED, such as per-match admin control from the dashboard, moderation while
+a match is live, and stats shaped the way FLICKED stores them. It would carry MatchZy's copyright notice and
+credit, as the licence requires. Nothing starts until the current arrangement is genuinely the limiting
+factor. See the <a href="roadmap.html#planned">roadmap</a>.</p>

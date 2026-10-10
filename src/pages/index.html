@@ -1,0 +1,171 @@
+<!-- {
+  "title": "Introduction",
+  "description": "FLICKED is a free, open-source, self-hostable competitive platform for CS2: matchmaking, parties, ratings, match history and demos.",
+  "source": "README.md"
+} -->
+<section class="pb-6">
+  <a href="roadmap.html" class="inline-flex items-center gap-2.5 rounded-full border border-white/[.09] bg-white/[.02] py-1 pr-3 pl-2.5 font-mono text-[11.5px] text-muted transition-colors hover:border-white/[.18] hover:text-foreground">
+    <span class="dot dot-live"></span>Alpha · Working end to end on a real server
+    {{icon:right:size-3.5 text-subtle}}
+  </a>
+
+  <h1 class="display mt-7 text-[3.3rem] leading-[.92] sm:text-[5.2rem]">Competitive CS2.<br><span class="text-primary">Self-hosted.</span></h1>
+
+  <p class="mt-6 !max-w-[58ch] text-[17.5px] leading-[1.65] text-muted">
+    FLICKED is a free, open-source platform for running your own CS2 ladder: matchmaking, parties,
+    ratings, match history and demos. You bring the servers. FLICKED finds the players, makes the
+    match, tells one of your servers to run it, and records what happened.
+  </p>
+
+  <div class="mt-8 flex flex-wrap gap-3">
+    <a href="quickstart.html" class="btn-primary">{{icon:rocket:size-4}}Quickstart</a>
+    <a href="architecture.html" class="btn-outline">How it fits together</a>
+  </div>
+</section>
+
+<pre data-lang="bash" data-title="Run it locally">
+# 1. the database
+docker compose up -d
+
+# 2. the backend, on http://localhost:5165
+cd backend/Flicked.Api && dotnet run --launch-profile https
+
+# 3. the launcher
+cd launcher && npm install && npm run tauri dev
+</pre>
+
+<aside class="callout callout-warn"><div>
+  <p><strong>Alpha software.</strong> Things will change and break. If something is off, that is worth
+  <a href="https://github.com/flickedgg/FLICKED/issues">reporting</a>, not assuming it is expected.</p>
+</div></aside>
+
+<h2>What FLICKED does</h2>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <div class="card">
+    <div class="card-icon">{{icon:swords:size-5}}</div>
+    <p class="card-title">Matchmaking</p>
+    <p class="card-text">Queue solo or with a party and get matched with players of a similar rating. The window widens the longer you wait.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">{{icon:vote:size-5}}</div>
+    <p class="card-title">Map vote</p>
+    <p class="card-text">Everyone accepts, then everyone votes. The highest vote wins and ties are settled at random.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">{{icon:server:size-5}}</div>
+    <p class="card-title">Server pool</p>
+    <p class="card-text">Owners register their CS2 servers once. FLICKED hands one out per match and takes it back when the match ends.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">{{icon:trend:size-5}}</div>
+    <p class="card-title">Ratings and history</p>
+    <p class="card-text">Every match updates ratings and is kept, with its demo. A win never loses you rating.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">{{icon:users:size-5}}</div>
+    <p class="card-title">Parties</p>
+    <p class="card-text">Invite friends and queue as one. Parties are always drafted whole onto the same team.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">{{icon:box:size-5}}</div>
+    <p class="card-title">Self-hosting</p>
+    <p class="card-text">One <code>docker compose up</code> for the database, and the API migrates itself on startup.</p>
+  </div>
+</div>
+
+<h2>What it does not do</h2>
+
+<p>Being clear about this saves everyone time.</p>
+
+<div class="grid gap-3 sm:grid-cols-3">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <span class="text-subtle">{{icon:ban:size-5}}</span>
+    <p class="mt-3 text-[14.5px] font-semibold text-foreground">No server hosting</p>
+    <p class="mt-1 text-[13.5px] leading-relaxed">It coordinates CS2 servers you already run. It does not create or host them.</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <span class="text-subtle">{{icon:shield:size-5}}</span>
+    <p class="mt-3 text-[14.5px] font-semibold text-foreground">No anti-cheat</p>
+    <p class="mt-1 text-[13.5px] leading-relaxed">Use a community anti-cheat on your servers if you need one.</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <span class="text-subtle">{{icon:flag:size-5}}</span>
+    <p class="mt-3 text-[14.5px] font-semibold text-foreground">Not a Valve service</p>
+    <p class="mt-1 text-[13.5px] leading-relaxed">It has nothing to do with official CS2 matchmaking.</p>
+  </div>
+</div>
+
+<p>Why these lines are drawn where they are is written down in <a href="roadmap.html#decisions">Roadmap &amp; decisions</a>.</p>
+
+<h2>The pieces</h2>
+
+<p>Four programs and a database. The backend owns every decision; everything else asks it.</p>
+
+<table>
+  <thead><tr><th>Part</th><th>Built with</th><th>Who uses it</th></tr></thead>
+  <tbody>
+    <tr><td>Launcher</td><td>Rust + Tauri, React and TypeScript in the webview</td><td>Players: queue, friends, parties, history</td></tr>
+    <tr><td>Backend</td><td>C# and .NET 10 (ASP.NET Core), EF Core</td><td>Everyone, indirectly. Every rule lives here</td></tr>
+    <tr><td>Database</td><td>PostgreSQL</td><td>The backend only</td></tr>
+    <tr><td>Dashboard</td><td>Next.js and Tailwind</td><td>Admins: the server pool and the news feed</td></tr>
+    <tr><td>Website</td><td>Next.js and Tailwind</td><td>Anyone</td></tr>
+    <tr><td>CS2 side</td><td>Metamod, CounterStrikeSharp and MatchZy</td><td>Your game servers</td></tr>
+  </tbody>
+</table>
+
+<h2>Explore the docs</h2>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <a href="quickstart.html" class="card">
+    <div class="card-icon">{{icon:rocket:size-5}}</div>
+    <p class="card-title">Quickstart</p>
+    <p class="card-text">Database, backend and launcher running on your machine in three commands.</p>
+  </a>
+  <a href="architecture.html" class="card">
+    <div class="card-icon">{{icon:layers:size-5}}</div>
+    <p class="card-title">Architecture</p>
+    <p class="card-text">What talks to what, in what order, and which piece is trusted with what.</p>
+  </a>
+  <a href="deploy-windows.html" class="card">
+    <div class="card-icon">{{icon:monitor:size-5}}</div>
+    <p class="card-title">Self-hosting</p>
+    <p class="card-text">Build and run FLICKED on a Windows or Linux VPS your friends can reach.</p>
+  </a>
+  <a href="rating.html" class="card">
+    <div class="card-icon">{{icon:trend:size-5}}</div>
+    <p class="card-title">Rating</p>
+    <p class="card-text">How a match changes your rating, and why performance is bounded.</p>
+  </a>
+  <a href="cs2-server.html" class="card">
+    <div class="card-icon">{{icon:wrench:size-5}}</div>
+    <p class="card-title">Running the CS2 server</p>
+    <p class="card-text">The plugin chain, surviving CS2 updates, and telling which link broke.</p>
+  </a>
+  <a href="api.html" class="card">
+    <div class="card-icon">{{icon:code:size-5}}</div>
+    <p class="card-title">API reference</p>
+    <p class="card-text">Every endpoint, grouped by who calls it and how it authenticates.</p>
+  </a>
+</div>
+
+<h2>Project status</h2>
+
+<p>The whole path works end to end, on a real server, with real people: two players signed in through
+Steam, queued, accepted, voted a map, and CS2 connected them itself. The match finished and the result
+was written to Postgres.</p>
+
+<div class="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
+  <p class="flex items-start gap-2.5 text-[14.5px]"><span class="mt-1 text-primary-light">{{icon:check:size-4}}</span>Steam sign-in, tokens held in Rust</p>
+  <p class="flex items-start gap-2.5 text-[14.5px]"><span class="mt-1 text-primary-light">{{icon:check:size-4}}</span>Server pool with leases</p>
+  <p class="flex items-start gap-2.5 text-[14.5px]"><span class="mt-1 text-primary-light">{{icon:check:size-4}}</span>Matchmaking, accept and map vote</p>
+  <p class="flex items-start gap-2.5 text-[14.5px]"><span class="mt-1 text-primary-light">{{icon:check:size-4}}</span>Results reported back by MatchZy</p>
+  <p class="flex items-start gap-2.5 text-[14.5px]"><span class="mt-1 text-primary-light">{{icon:check:size-4}}</span>Parties and rating (merged and tested)</p>
+  <p class="flex items-start gap-2.5 text-[14.5px]"><span class="mt-1 text-primary-light">{{icon:check:size-4}}</span>Short-handed matches for small groups</p>
+  <p class="flex items-start gap-2.5 text-[14.5px]"><span class="mt-1 text-primary-light">{{icon:check:size-4}}</span>News feed written from the dashboard</p>
+  <p class="flex items-start gap-2.5 text-[14.5px]"><span class="mt-1 text-primary-light">{{icon:check:size-4}}</span>Deployment guides for Windows and Linux</p>
+</div>
+
+<p>Parties and rating are merged, tested and deployed, but have not yet been proven in a live match.
+The <a href="roadmap.html#known-gaps">known gaps</a> list is an honest account of what is wrong today,
+and a good place to start if you want to <a href="contributing.html">contribute</a>.</p>

@@ -1,0 +1,187 @@
+<!-- {
+  "title": "Roadmap & decisions",
+  "lead": "Where FLICKED is going, why it looks the way it does, and the decisions behind it, each with what it costs.",
+  "description": "FLICKED's current status, known gaps, planned work, what is not planned, and the decision log behind the architecture.",
+  "source": "docs/ROADMAP.md"
+} -->
+<h2>What this project has to work with</h2>
+
+<p>Worth stating plainly, because it explains most of the decisions below.</p>
+
+<div class="grid gap-3 sm:grid-cols-3">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5"><p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">People</p><p class="mt-1.5 text-[15px] font-semibold text-foreground">One person</p><p class="mt-1 text-[13.5px] leading-relaxed">Part time, learning some parts of the stack while building them.</p></div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5"><p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Hardware</p><p class="mt-1.5 text-[15px] font-semibold text-foreground">One VPS</p><p class="mt-1 text-[13.5px] leading-relaxed">No second machine to test failover on, and no fleet of idle CS2 servers.</p></div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5"><p class="font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Budget</p><p class="mt-1.5 text-[15px] font-semibold text-foreground">None for infrastructure</p><p class="mt-1 text-[13.5px] leading-relaxed">Anything that only works when servers are left running is out of reach.</p></div>
+</div>
+
+<p>Code that has never run against the thing it manages is not finished code, it is a guess. A server pool can
+be tested properly on one machine, with a single real CS2 server proving the end-to-end path. Where real
+capacity is needed, it comes from the people who already have it: server owners run CS2 servers anyway, and
+FLICKED coordinates them.</p>
+
+<h2>Where it is</h2>
+
+<p class="eyebrow">As of 27 September 2026</p>
+
+<p>The whole path works end to end, on a real server, with real people: two players signed in through Steam,
+queued, accepted, voted a map, and CS2 connected them itself. The match finished and the result was written
+to Postgres.</p>
+
+<table>
+  <thead><tr><th>Shipped</th><th>What it means</th></tr></thead>
+  <tbody>
+    <tr><td>Real data</td><td>News, leaderboard and history come from Postgres. Migrations apply on startup, so upgrading is replacing a binary</td></tr>
+    <tr><td>Accounts</td><td>Steam sign-in, with the session token held in Rust and never handed to the webview</td></tr>
+    <tr><td>Server pool</td><td>Servers registered in the dashboard, RCON passwords encrypted, claims with <code>FOR UPDATE SKIP LOCKED</code>, leases, offline detection</td></tr>
+    <tr><td>Matches</td><td>Widening rating windows, accept and map-vote phases, RCON start, and waiting for the map to change before handing out the address</td></tr>
+    <tr><td>Results and rating</td><td>Reported over an authenticated endpoint, applied once per match. See <a href="rating.html">Rating</a></td></tr>
+    <tr><td>Parties</td><td>Queueing with friends, drafted onto the same team. See <a href="parties.html">Matchmaking &amp; parties</a></td></tr>
+    <tr><td>Short-handed matches</td><td>Opt-in 4v4 or 3v3 after twenty seconds for small communities, always even</td></tr>
+    <tr><td>News</td><td>Admins write posts in the dashboard; every launcher reads the one feed</td></tr>
+    <tr><td>Dashboard and guides</td><td>Server pool and news pages, and deployment guides for <a href="deploy-windows.html">Windows</a> and <a href="deploy-linux.html">Linux</a></td></tr>
+  </tbody>
+</table>
+
+<aside class="callout callout-note"><div>
+  <p><strong>Shipped is not the same as proven.</strong> Parties and rating are merged, tested and deployed, but no
+  party has formed between two real launchers and no rating has moved in a live match yet.</p>
+</div></aside>
+
+<h2>Known gaps</h2>
+
+<p>Things that are wrong or missing today, written down so they are not rediscovered. A good place to start
+contributing.</p>
+
+<ul>
+  <li><strong>Declining a match does not requeue anyone.</strong> Only the twenty-second timeout path does. With
+  parties it also costs a party its place in the queue.</li>
+  <li><strong>A cancelled Wingman match requeues its players into Competitive.</strong> The mode is not stored on
+  the match.</li>
+  <li><strong>Wingman is disabled in the launcher.</strong> The backend supports it; there is no Wingman server in
+  the pool to send it to.</li>
+  <li><strong>No live updates.</strong> Friends, parties and the queue are polled. A push channel would replace the
+  transport without changing what the screens read.</li>
+  <li><strong>No presence.</strong> Whether a friend is online, in menus or in a match belongs with that push
+  channel.</li>
+  <li><strong>Demos are recorded but not linked</strong> to a match anywhere a player can reach.</li>
+  <li><strong>A stuck match needs SQL.</strong> There is no admin action to cancel one, and a player can leave the
+  queue but not a match.</li>
+  <li><strong>Seeded demo players</strong> share the leaderboard with real ones on any instance that ran the
+  migrations.</li>
+  <li><strong>The live instance runs over plain HTTP</strong>, deliberately, for testing among friends. See
+  <a href="security.html">Security</a>.</li>
+</ul>
+
+<h2>Planned</h2>
+
+<p>Roughly in order.</p>
+
+<div class="space-y-3.5">
+  <div class="card">
+    <div class="flex items-center gap-3"><div class="card-icon !mb-0">{{icon:plug:size-5}}</div><p class="card-title">A FLICKED plugin, built on MatchZy</p></div>
+    <p class="card-text mt-3">Not a better plugin: one that answers to one backend. Per-match admin control from the dashboard, moderation while a match is live, and stats shaped the way FLICKED stores them. MatchZy is MIT licensed, so the route is to fork it, keep what works, and credit it properly. Nothing starts until the current arrangement is genuinely the limiting factor.</p>
+  </div>
+  <div class="card">
+    <div class="flex items-center gap-3"><div class="card-icon !mb-0">{{icon:ban:size-5}}</div><p class="card-title">Bans</p></div>
+    <p class="card-text mt-3">First a ban on the Steam account, which is simple and enough for the usual case; later a hardware ban. This is moderation, not anti-cheat: it removes people an admin decided to remove and detects nothing. A hardware ban means collecting identifiers from players' machines, which players deserve to be told about plainly. It raises the cost of coming back; it does not prevent it.</p>
+  </div>
+  <div class="card">
+    <div class="flex items-center gap-3"><div class="card-icon !mb-0">{{icon:users:size-5}}</div><p class="card-title">Party codes</p></div>
+    <p class="card-text mt-3">A short code the leader can share, for when an invite is the wrong shape: a Discord call, a friend not on your list yet. The groundwork is done; a code is one column and one endpoint.</p>
+  </div>
+</div>
+
+<h2>Not planned</h2>
+
+<ul>
+  <li><strong>Anti-cheat.</strong> See the decision below.</li>
+  <li><strong>Creating or hosting CS2 servers.</strong> Not ruled out forever, but not planned.</li>
+  <li><strong>Mobile apps, a web launcher, tournaments and brackets.</strong> Maybe one day. Not promised.</li>
+</ul>
+
+<h2>Decisions</h2>
+
+<p>Why things are the way they are, newest first. Each entry is what was decided, why, and what it costs.</p>
+
+<h3>2026-09-20 · Server owners bring the servers</h3>
+
+<p><strong>Decided:</strong> FLICKED keeps a pool of CS2 servers that owners register themselves. It claims one for
+a match and releases it afterwards. It does not create, host or destroy servers.</p>
+
+<p><strong>Why:</strong> orchestration is an infrastructure product on its own: containers on demand, ports,
+capacity, cleaning up dead servers. None of it is about CS2. It is also not testable here: orchestration is
+judged on what happens when a machine dies mid-match or ten matches start at once, and with one VPS none of
+that could be tried, only hoped for.</p>
+
+<p><strong>What it costs:</strong> self-hosters run their own CS2 servers, which is normal for community tooling.
+The door stays open: provisioning would just be another way a row lands in the pool table, and matchmaking
+would never notice.</p>
+
+<h3>2026-09-20 · MatchZy first, a custom plugin later</h3>
+
+<p><strong>Decided:</strong> use MatchZy to run matches instead of writing a plugin first.</p>
+
+<p><strong>Why:</strong> it already does match configs, knife rounds, pauses, demo recording and event webhooks.
+Writing that again would take months and produce something worse. The backend only needs two endpoints.</p>
+
+<p><strong>What it costs:</strong> a dependency on MatchZy's config and event format. It is open source and C#,
+so it can be read, and forked if it stops fitting.</p>
+
+<h3>2026-09-20 · No anti-cheat</h3>
+
+<p><strong>Decided:</strong> drop the planned C++ anti-cheat.</p>
+
+<p><strong>Why:</strong> anti-cheat is specialist and adversarial, and doing it badly is worse than not doing it,
+because it promises a protection that is not real. The people it is up against work full time on getting past
+it.</p>
+
+<p><strong>What it costs:</strong> cheating is left to the server owner, using community anti-cheat. Honest silence
+beats a badge nobody should rely on.</p>
+
+<h3>2026-09-19 · PostgreSQL in Docker, not XAMPP's MySQL</h3>
+
+<p><strong>Decided:</strong> PostgreSQL, run through <code>docker compose</code>.</p>
+
+<p><strong>Why:</strong> the leaderboard is a ranking query, and Postgres has window functions and
+<code>FOR UPDATE SKIP LOCKED</code> for handing out servers without two matches claiming the same one. EF Core's
+Npgsql provider is the best supported. Self-hosting should be one command rather than a list of
+installers.</p>
+
+<p><strong>What it costs:</strong> Docker Desktop and WSL2 have to be installed before anything runs locally.</p>
+
+<h3>2026-09-19 · C# for the backend</h3>
+
+<p><strong>Decided:</strong> ASP.NET Core, over Go.</p>
+
+<p><strong>Why:</strong> the CS2 side is already C#. CounterStrikeSharp and MatchZy are C#, so a future plugin will
+be too, and one language means one set of match and player models. SignalR covers live updates later, and EF
+Core gives self-hosters real migrations.</p>
+
+<p><strong>What it costs:</strong> a heavier runtime than Go: containers around 100 MB rather than 20 MB, and higher
+idle memory on a small VPS.</p>
+
+<h3>Rust and Tauri for the launcher</h3>
+
+<p><strong>Decided:</strong> Tauri with a React and TypeScript UI, over Electron.</p>
+
+<p><strong>Why:</strong> players keep the launcher open while they queue, so it has to be light. Tauri uses the
+system webview instead of shipping a browser: a download of a few megabytes instead of a hundred. Its native
+side matters too: the session token can live in Rust and never enter the webview.</p>
+
+<p><strong>What it costs:</strong> Rust is the least familiar language in the project, so that side is slower to
+write, and Tauri's ecosystem is smaller than Electron's.</p>
+
+<h3>Writing a new decision</h3>
+
+<p>Keep it short, and be honest about the cost. A decision with no trade-off usually means the trade-off has
+not been found yet.</p>
+
+<pre data-lang="markdown" data-title="docs/ROADMAP.md">
+## YYYY-MM-DD · Short title
+
+**Decided:** what was chosen.
+
+**Why:** the reason, in plain words.
+
+**What it costs:** what is given up, or who has to do more work because of it.
+</pre>

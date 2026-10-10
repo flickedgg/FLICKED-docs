@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deploy on Windows · FLICKED Docs</title>
+  <meta name="description" content="Host FLICKED on a Windows VPS: build the API, launcher and dashboard, install Postgres, configure the three addresses, open ports and run as a service.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Deploy on Windows · FLICKED Docs">
+  <meta property="og:description" content="Host FLICKED on a Windows VPS: build the API, launcher and dashboard, install Postgres, configure the three addresses, open ports and run as a service.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html" aria-current="page">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html" aria-current="page">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">Self-hosting</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">Deploy on Windows</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">Build FLICKED and run it somewhere your friends can reach: one Windows VPS running the CS2 server, the backend and the dashboard together.</p>
+          </header>
+        <div class="prose-docs">
+<p>Everything works the same spread across several machines; the addresses just stop being the same one.
+On Linux? <a href="deploy-linux.html">Deploy on Linux</a> covers the same deployment with systemd and HTTPS
+in the main path.</p>
+
+<aside class="callout callout-warn"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><div>
+  <p><strong>Read <a href="security.html">Security</a> before you invite anyone.</strong> This setup runs over plain
+  HTTP, which is fine for testing among people you know and not fine for anything else.</p>
+</div></aside>
+
+<h2 id="what-you-need">What you need<a class="anchor" href="#what-you-need" aria-label="Link to this section">#</a></h2>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Requirement</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>A Windows VPS</td><td>The one already running your CS2 server is fine</td></tr>
+    <tr><td>.NET 10 SDK</td><td>On your development machine only. The VPS needs nothing</td></tr>
+    <tr><td>Node.js LTS</td><td>On both, if you want the dashboard</td></tr>
+    <tr><td>A Steam Web API key</td><td>Free, from <a href="https://steamcommunity.com/dev/apikey">steamcommunity.com/dev/apikey</a></td></tr>
+    <tr><td>Your SteamID64</td><td>So you can reach the dashboard as an admin</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="the-three-addresses">The three addresses<a class="anchor" href="#the-three-addresses" aria-label="Link to this section">#</a></h2>
+
+<p>Nearly every deployment problem is one of these being wrong, and each fails quietly.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">what talks to what</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">a friend's PC                    your VPS                       Steam
+─────────────                    ────────                       ─────
+launcher  ──── http ────►  Flicked.Api :5165  ──── RCON ────►  CS2 + MatchZy
+   │                              │  ▲                              │
+   │                        Postgres  └────── match events ─────────┘
+   │
+   └──── steam://connect ──────────────────────────────────►  CS2 server</code></pre></div>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Setting</th><th>Who reads it</th><th>If it is wrong</th></tr></thead>
+  <tbody>
+    <tr><td><code>Steam:PublicUrl</code></td><td>A friend's <strong>browser</strong>, signing in</td><td>Sign-in sends them back to their own PC</td></tr>
+    <tr><td><code>Api:PublicUrl</code></td><td>The <strong>CS2 server</strong>, fetching a match config</td><td>The server fetches nothing and stays on its old map, with no error anywhere</td></tr>
+    <tr><td><code>FLICKED_API</code></td><td>The <strong>launcher</strong>, compiled in</td><td>The launcher looks for FLICKED on the player's own machine</td></tr>
+  </tbody>
+</table></div>
+
+<p>All three must be your VPS address. Replace <code>&lt;vps-address&gt;</code> below with it.</p>
+
+<h2 id="part-1-build">Part 1: Build<a class="anchor" href="#part-1-build" aria-label="Link to this section">#</a></h2>
+
+<p>All three are built on your development machine. Nothing is compiled on the VPS.</p>
+
+<h3 id="the-api">The API<a class="anchor" href="#the-api" aria-label="Link to this section">#</a></h3>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Command Prompt</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-cmd">dotnet publish backend/Flicked.Api -c Release -r win-x64 --self-contained</code></pre></div>
+
+<p>Output lands in <code>backend/Flicked.Api/bin/Release/net10.0/win-x64/publish/</code>.
+<code>--self-contained</code> bundles the .NET runtime, so the VPS needs no SDK. It is about 115 MB the first
+time; later updates are <a href="#upgrading">two files</a>.</p>
+
+<h3 id="the-launcher">The launcher<a class="anchor" href="#the-launcher" aria-label="Link to this section">#</a></h3>
+
+<p>The API address is compiled in, so a build made on your machine points at your machine unless you say
+otherwise:</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Command Prompt</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-cmd"><span class="hljs-built_in">set</span> FLICKED_API=http://&lt;vps-address&gt;:<span class="hljs-number">5165</span>
+<span class="hljs-built_in">cd</span> launcher
+npm install
+npm run tauri build</code></pre></div>
+
+<p>Installers land in <code>launcher/src-tauri/target/release/bundle/</code>: an <code>.exe</code> (NSIS) and an
+<code>.msi</code>, the same app either way.</p>
+
+<aside class="callout callout-tip"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg><div>
+  <p><strong>Check the build before handing it out.</strong> One variable feeds both the Rust side and the
+  webview so they cannot disagree, but confirming costs nothing:</p>
+  <p><code>findstr /C:"&lt;vps-address&gt;" launcher\src-tauri\target\release\launcher.exe</code></p>
+</div></aside>
+
+<p>Friends will see <strong>"Windows protected your PC"</strong> when they run it. That is SmartScreen reacting
+to an unsigned installer, not to anything being wrong: <em>More info</em>, then <em>Run anyway</em>. Signing
+needs a paid certificate.</p>
+
+<h3 id="the-dashboard">The dashboard<a class="anchor" href="#the-dashboard" aria-label="Link to this section">#</a></h3>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Command Prompt</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-cmd"><span class="hljs-built_in">cd</span> dashboard
+npm install
+<span class="hljs-built_in">set</span> NEXT_PUBLIC_API_URL=http://&lt;vps-address&gt;:<span class="hljs-number">5165</span>
+npx next build</code></pre></div>
+
+<p>The build produces a standalone server. Assemble what the VPS needs:</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">deploy folder</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">.next/standalone/*   →  the server and its dependencies
+.next/static/*       →  into &lt;deploy&gt;/.next/static
+public/*             →  into &lt;deploy&gt;/public</code></pre></div>
+
+<p>That folder runs with Node alone, with no <code>npm install</code> on the VPS.</p>
+
+<aside class="callout callout-warn"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><div>
+  <p><strong>The dashboard has to run on the VPS</strong>, not on your PC. Its session cookie is
+  <code>SameSite=Lax</code>, so a browser will not send it from <code>localhost:3000</code> to an API on another
+  host: you would sign in successfully and then have every request rejected. Same host on a different port
+  is fine, because cookies ignore ports.</p>
+</div></aside>
+
+<h2 id="part-2-deploy">Part 2: Deploy<a class="anchor" href="#part-2-deploy" aria-label="Link to this section">#</a></h2>
+
+<ol class="steps">
+  <li>
+    <h4>Install Postgres</h4>
+    <p>Docker Desktop on a Windows VPS usually cannot get the nested virtualization it needs, so install
+    Postgres natively with the <strong>EnterpriseDB installer</strong>. It runs as a service and starts with
+    the machine. Then, in <strong>SQL Shell (psql)</strong>:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">psql</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-sql"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">USER</span> flicked <span class="hljs-keyword">WITH</span> PASSWORD <span class="hljs-string">&#x27;pick-a-real-password&#x27;</span>;
+<span class="hljs-keyword">CREATE</span> DATABASE flicked OWNER flicked;</code></pre></div>
+    <p>Create no tables. The API applies its own migrations on startup and seeds the map pool.</p>
+  </li>
+  <li>
+    <h4>Copy the API across</h4>
+    <p>Put the published folder anywhere on the VPS. These examples use <code>C:\flicked\api</code>.</p>
+  </li>
+  <li>
+    <h4>Configure it</h4>
+    <p>Create <code>.env</code> <strong>next to <code>Flicked.Api.exe</code></strong>. It is read on startup and
+    belongs in no repository. Every key is described in <a href="configuration.html">Configuration</a>.</p>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">C:\flicked\api\.env</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-ini"><span class="hljs-comment"># The database you just created.</span>
+ConnectionStrings:<span class="hljs-attr">Flicked</span>=Host=localhost<span class="hljs-comment">;Port=5432;Database=flicked;Username=flicked;Password=&lt;db-password&gt;</span>
+
+<span class="hljs-comment"># This machine, as the outside world sees it. Never localhost: one of these is</span>
+<span class="hljs-comment"># read by a browser on someone else&#x27;s PC, the other by the CS2 server.</span>
+Steam:<span class="hljs-attr">PublicUrl</span>=http://&lt;vps-address&gt;:<span class="hljs-number">5165</span>
+Api:<span class="hljs-attr">PublicUrl</span>=http://&lt;vps-address&gt;:<span class="hljs-number">5165</span>
+
+<span class="hljs-comment"># Where the dashboard runs. Needed for CORS and for the sign-in redirect.</span>
+Dashboard:<span class="hljs-attr">Url</span>=http://&lt;vps-address&gt;:<span class="hljs-number">3000</span>
+
+<span class="hljs-comment"># Listen on every interface. The default is localhost only, which leaves the</span>
+<span class="hljs-comment"># API invisible from outside however the firewall is set.</span>
+<span class="hljs-attr">urls</span>=http://<span class="hljs-number">0.0</span>.<span class="hljs-number">0.0</span>:<span class="hljs-number">5165</span>
+
+<span class="hljs-attr">STEAM_API_KEY</span>=&lt;your-steam-web-api-key&gt;
+
+<span class="hljs-comment"># Comma-separated SteamID64s allowed into the dashboard.</span>
+<span class="hljs-attr">FLICKED_ADMIN_STEAM_IDS</span>=&lt;your-steamid64&gt;
+
+<span class="hljs-comment"># Encryption keys for stored RCON passwords. Back this folder up.</span>
+DataProtection:<span class="hljs-attr">KeyPath</span>=C:\flicked\keys
+
+<span class="hljs-comment"># Optional, while testing: play with fewer people than a real match needs.</span>
+<span class="hljs-comment"># Matchmaking:CompetitivePlayers=2</span>
+
+<span class="hljs-comment"># Optional, for a small community: start short-handed rather than wait for a</span>
+<span class="hljs-comment"># tenth player who is not coming.</span>
+<span class="hljs-comment"># Matchmaking:MinCompetitivePlayers=6</span></code></pre></div>
+  </li>
+  <li>
+    <h4>Open the ports</h4>
+    <p>In an <strong>administrator PowerShell</strong> on the VPS:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">PowerShell (admin)</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-powershell"><span class="hljs-built_in">New-NetFirewallRule</span> <span class="hljs-literal">-DisplayName</span> <span class="hljs-string">&quot;FLICKED API&quot;</span> <span class="hljs-literal">-Direction</span> Inbound <span class="hljs-literal">-Protocol</span> TCP <span class="hljs-literal">-LocalPort</span> <span class="hljs-number">5165</span> <span class="hljs-literal">-Action</span> Allow
+<span class="hljs-built_in">New-NetFirewallRule</span> <span class="hljs-literal">-DisplayName</span> <span class="hljs-string">&quot;FLICKED Dashboard&quot;</span> <span class="hljs-literal">-Direction</span> Inbound <span class="hljs-literal">-Protocol</span> TCP <span class="hljs-literal">-LocalPort</span> <span class="hljs-number">3000</span> <span class="hljs-literal">-Action</span> Allow</code></pre></div>
+    <p>Many providers have a second firewall in their web panel. If a port still looks closed, check
+    there.</p>
+  </li>
+  <li>
+    <h4>Start the API</h4>
+    <p>Run <code>Flicked.Api.exe</code>. The first start applies the migrations; watch that it gets through
+    them without an exception. Then test it <strong>from your own PC</strong>, not from the VPS, because a
+    service can answer itself while being unreachable from outside:</p>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Your PC</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-bash">curl http://&lt;vps-address&gt;:5165/api/news</code></pre></div>
+  </li>
+  <li>
+    <h4>Start the dashboard</h4>
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">PowerShell</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-powershell"><span class="hljs-built_in">cd</span> C:\flicked\dashboard
+<span class="hljs-variable">$env:PORT</span>=<span class="hljs-number">3000</span>; <span class="hljs-variable">$env:HOSTNAME</span>=<span class="hljs-string">&quot;0.0.0.0&quot;</span>; node server.js</code></pre></div>
+    <p><code>HOSTNAME=0.0.0.0</code> matters for the same reason <code>urls</code> did: Next binds to localhost
+    otherwise.</p>
+  </li>
+  <li>
+    <h4>Add your CS2 server</h4>
+    <p>Open <code>http://&lt;vps-address&gt;:3000</code>, sign in with Steam, and add the server with its host,
+    port and RCON password. FLICKED handles the rest: it reloads MatchZy before each match, and sends the
+    config URL and event settings over RCON, so <code>server.cfg</code> needs no FLICKED-specific lines.</p>
+    <p>A server that answers the pool's RCON ping shows as <strong>Idle</strong> and can host matches. One that
+    does not is <strong>Offline</strong> and is skipped until it answers. For the game side, see
+    <a href="cs2-server.html">Running the CS2 server</a>.</p>
+  </li>
+</ol>
+
+<h3 id="keep-it-running">Keep it running<a class="anchor" href="#keep-it-running" aria-label="Link to this section">#</a></h3>
+
+<p>A console window dies when you log out of the VPS. Install <a href="https://nssm.cc">NSSM</a> and register
+the API as a service:</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Command Prompt (admin)</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-cmd">nssm install FlickedApi C:\flicked\api\Flicked.Api.exe
+nssm <span class="hljs-built_in">set</span> FlickedApi AppDirectory C:\flicked\api
+nssm <span class="hljs-built_in">start</span> FlickedApi</code></pre></div>
+
+<h2 id="upgrading">Upgrading<a class="anchor" href="#upgrading" aria-label="Link to this section">#</a></h2>
+
+<p>After the first deployment you rarely need the whole 115 MB again. Unless the dependencies changed, a new
+backend build is <strong>two files</strong>:</p>
+
+<ol>
+  <li><code>dotnet publish</code> as above, on your machine</li>
+  <li>stop the API on the VPS</li>
+  <li>copy <code>Flicked.Api.dll</code> and <code>Flicked.Api.pdb</code> over the old ones</li>
+  <li>start it; any new migrations apply on startup</li>
+</ol>
+
+<p><strong>Back up the database first when an upgrade migrates data.</strong> From PowerShell, not psql, since
+<code>pg_dump</code> is a program rather than a psql command:</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">PowerShell</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-powershell"><span class="hljs-variable">$pg</span> = <span class="hljs-built_in">Get-ChildItem</span> <span class="hljs-string">&quot;C:\Program Files\PostgreSQL\*\bin\pg_dump.exe&quot;</span> | <span class="hljs-built_in">Select-Object</span> <span class="hljs-literal">-First</span> <span class="hljs-number">1</span>
+&amp; <span class="hljs-variable">$pg</span>.FullName <span class="hljs-literal">-U</span> postgres <span class="hljs-literal">-d</span> flicked <span class="hljs-operator">-f</span> C:\backup.sql</code></pre></div>
+
+<aside class="callout callout-note"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><div>
+  <p><strong>Update the API before handing out a launcher built against it.</strong> The two talk over
+  endpoints that change together, so a launcher from one side of an update and an API from the other will
+  not agree.</p>
+</div></aside>
+
+<h2 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting" aria-label="Link to this section">#</a></h2>
+
+<p>Every one of these has happened during a real setup.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Symptom</th><th>Cause</th></tr></thead>
+  <tbody>
+    <tr><td>API unreachable from outside, firewall looks open</td><td><code>urls=http://0.0.0.0:5165</code> missing, so it bound to localhost</td></tr>
+    <tr><td>Server never loads the voted map, console shows nothing</td><td><code>Api:PublicUrl</code> is localhost or unreachable, so the server fetched its config from itself</td></tr>
+    <tr><td>Sign-in sends a friend back to their own PC</td><td><code>Steam:PublicUrl</code> is localhost</td></tr>
+    <tr><td>News and leaderboard empty in the launcher, everything else fine</td><td>The launcher was built without <code>FLICKED_API</code></td></tr>
+    <tr><td>Dashboard signs in, then every request fails</td><td>The dashboard is not on the same host as the API (<code>SameSite=Lax</code>)</td></tr>
+    <tr><td><code>Server X has an unreadable RCON password</code></td><td>The database moved between machines without its <code>DataProtection</code> keys</td></tr>
+    <tr><td>Match timers start part-way through, or sit at zero</td><td>The VPS clock or the player's is wrong; sync both</td></tr>
+    <tr><td><code>invalid command \...</code></td><td>You are in psql and typed a program name; programs belong in PowerShell</td></tr>
+    <tr><td><code>The ampersand (&amp;) character is not allowed</code></td><td>Two PowerShell commands on one line; separate them with <code>;</code></td></tr>
+    <tr><td><code>-U is not recognized</code> after a quoted path</td><td>PowerShell needs <code>&amp; </code> in front of a quoted path to run it</td></tr>
+  </tbody>
+</table></div>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="rating.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Rating</span>
+          </a>
+          <a href="deploy-linux.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] items-end text-right sm:col-start-2">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle">Next<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Deploy on Linux</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#what-you-need">What you need</a>
+          <a class="toc-link" href="#the-three-addresses">The three addresses</a>
+          <a class="toc-link" href="#part-1-build">Part 1: Build</a>
+          <a class="toc-link toc-sub" href="#the-api">The API</a>
+          <a class="toc-link toc-sub" href="#the-launcher">The launcher</a>
+          <a class="toc-link toc-sub" href="#the-dashboard">The dashboard</a>
+          <a class="toc-link" href="#part-2-deploy">Part 2: Deploy</a>
+          <a class="toc-link toc-sub" href="#keep-it-running">Keep it running</a>
+          <a class="toc-link" href="#upgrading">Upgrading</a>
+          <a class="toc-link" href="#troubleshooting">Troubleshooting</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/docs/DEPLOY.md" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

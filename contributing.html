@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contributing · FLICKED Docs</title>
+  <meta name="description" content="How to contribute to FLICKED: before you write code, setup, tests against real Postgres, style, commits, pull requests and security.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Contributing · FLICKED Docs">
+  <meta property="og:description" content="How to contribute to FLICKED: before you write code, setup, tests against real Postgres, style, commits, pull requests and security.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;1,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="min-h-screen">
+  <div class="ambient pointer-events-none fixed inset-x-0 top-0 -z-10 h-[520px]" aria-hidden="true"></div>
+  <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-elevated focus:px-3 focus:py-2 focus:text-foreground">Skip to content</a>
+
+  <header class="sticky top-0 z-40 border-b border-white/[.06] bg-bg/75 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <button type="button" class="-ml-1.5 inline-flex size-9 items-center justify-center rounded-md text-muted hover:bg-white/[.04] hover:text-foreground lg:hidden" data-nav-open aria-label="Open navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+      <a href="index.html" class="flex items-center gap-2.5" aria-label="FLICKED Docs home">
+        <img src="assets/logo.png" alt="" class="h-7 w-auto">
+        <span class="wordmark text-[22px] leading-none">FLICKED</span>
+        <span class="ml-1 rounded-[4px] border border-white/[.09] px-1.5 py-px font-mono text-[10.5px] uppercase tracking-[.12em] text-subtle">Docs</span>
+      </a>
+
+      <button type="button" data-search-open class="ml-auto flex h-9 items-center gap-2.5 rounded-lg border border-white/[.08] bg-white/[.02] px-3 text-sm text-subtle transition-colors hover:border-white/[.14] hover:text-muted md:ml-8 md:w-72 lg:w-80">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span class="hidden md:inline">Search the docs</span>
+        <span class="ml-auto hidden items-center gap-1 md:flex"><kbd class="kbd" data-mod-key>Ctrl</kbd><kbd class="kbd">K</kbd></span>
+      </button>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="External">
+        <span class="mr-2 hidden items-center gap-2 font-mono text-[11px] text-subtle xl:flex"><span class="dot dot-live"></span>v0.1 · Alpha</span>
+        <a href="https://github.com/flickedgg/FLICKED/issues" target="_blank" rel="noopener" class="rounded-md px-3 py-1.5 text-[13.5px] text-subtle transition-colors hover:text-foreground">Report an issue</a>
+        <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="ml-1 inline-flex h-9 items-center gap-2 rounded-md border border-white/[.14] px-3 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/[.28] hover:bg-white/[.03]"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- mobile navigation -->
+  <div id="mobile-nav" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-nav-close></div>
+    <div class="absolute inset-y-0 left-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-white/[.08] bg-surface px-3 py-5">
+      <div class="mb-6 flex items-center justify-between px-3">
+        <span class="wordmark text-[20px]">FLICKED</span>
+        <button type="button" class="inline-flex size-8 items-center justify-center rounded-md text-muted hover:bg-white/[.05] hover:text-foreground" data-nav-close aria-label="Close navigation"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <nav aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html" aria-current="page">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+      <a href="https://github.com/flickedgg/FLICKED" target="_blank" rel="noopener" class="mx-3 mt-2 flex items-center gap-2 text-sm text-subtle hover:text-foreground"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="size-4"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>GitHub</a>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-[1440px] px-4 sm:px-6 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12 lg:px-8 xl:grid-cols-[232px_minmax(0,1fr)_216px]">
+    <aside class="hidden lg:block">
+      <nav class="sticky top-16 -ml-3 h-[calc(100vh-4rem)] overflow-y-auto py-10 pr-2" aria-label="Documentation">
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Getting started</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="index.html">Introduction</a></li>
+            <li><a class="nav-link" href="quickstart.html">Quickstart</a></li>
+            <li><a class="nav-link" href="configuration.html">Configuration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Concepts</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="architecture.html">Architecture</a></li>
+            <li><a class="nav-link" href="parties.html">Matchmaking &amp; parties</a></li>
+            <li><a class="nav-link" href="rating.html">Rating</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Self-hosting</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="deploy-windows.html">Deploy on Windows</a></li>
+            <li><a class="nav-link" href="deploy-linux.html">Deploy on Linux</a></li>
+            <li><a class="nav-link" href="security.html">Security</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">CS2 servers</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="cs2-server.html">Running the CS2 server</a></li>
+            <li><a class="nav-link" href="matchzy.html">MatchZy integration</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Reference</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="api.html">API reference</a></li>
+            <li><a class="nav-link" href="design.html">Design system</a></li>
+          </ul>
+        </div>
+        <div class="mb-7">
+          <p class="mb-2 px-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">Project</p>
+          <ul class="space-y-px">
+            <li><a class="nav-link" href="roadmap.html">Roadmap &amp; decisions</a></li>
+            <li><a class="nav-link" href="contributing.html" aria-current="page">Contributing</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main id="content" class="min-w-0 py-10 lg:py-14">
+      <article class="mx-auto max-w-[760px]">
+          <header class="mb-12">
+            <p class="eyebrow !text-primary-light">Project</p>
+            <h1 class="display mt-3 text-[2.6rem] leading-[.95] sm:text-[3.4rem]">Contributing</h1>
+            <p class="mt-5 max-w-[60ch] text-[17px] leading-[1.65] text-muted">A small project with a few strong opinions, all in one place so you do not have to guess them from a review.</p>
+          </header>
+        <div class="prose-docs">
+<blockquote><p><strong>The short version:</strong> anything that changes behaviour comes with a test, comments explain
+<em>why</em> rather than <em>what</em>, and a pull request says what you actually verified.</p></blockquote>
+
+<h2 id="before-you-write-code">Before you write code<a class="anchor" href="#before-you-write-code" aria-label="Link to this section">#</a></h2>
+
+<p><strong>Open an issue first for anything substantial.</strong> A bug fix or small improvement can arrive as a
+pull request. A new feature, a schema change, or anything touching matchmaking is worth discussing first,
+because a lot of design reasoning lives in the docs and it is a shame to find out after you have written
+it.</p>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>If you are touching</th><th>Read first</th></tr></thead>
+  <tbody>
+    <tr><td>Anything at all</td><td><a href="architecture.html">Architecture</a></td></tr>
+    <tr><td>Matchmaking, queue, parties</td><td><a href="parties.html">Matchmaking &amp; parties</a></td></tr>
+    <tr><td>Ratings, stats, the leaderboard</td><td><a href="rating.html">Rating</a></td></tr>
+    <tr><td>Anything the CS2 server sends</td><td><a href="matchzy.html">MatchZy integration</a></td></tr>
+    <tr><td>The website or launcher UI</td><td><a href="design.html">Design system</a></td></tr>
+    <tr><td>Deployment and configuration</td><td><a href="deploy-windows.html">Windows</a> · <a href="deploy-linux.html">Linux</a> · <a href="configuration.html">Configuration</a></td></tr>
+  </tbody>
+</table></div>
+
+<p><strong>Looking for something to do?</strong> The <a href="roadmap.html#known-gaps">known gaps</a> are an honest list
+of what is wrong today.</p>
+
+<h2 id="getting-set-up">Getting set up<a class="anchor" href="#getting-set-up" aria-label="Link to this section">#</a></h2>
+
+<p>You need Docker, the .NET 10 SDK, Node.js and, for the launcher, Rust. The
+<a href="quickstart.html">Quickstart</a> walks through it.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Terminal</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-bash">docker compose up -d                  <span class="hljs-comment"># PostgreSQL</span>
+<span class="hljs-built_in">cd</span> backend/Flicked.Api &amp;&amp; dotnet run  <span class="hljs-comment"># API on http://localhost:5165</span>
+<span class="hljs-built_in">cd</span> launcher &amp;&amp; npm install &amp;&amp; npm run tauri dev</code></pre></div>
+
+<h2 id="tests">Tests<a class="anchor" href="#tests" aria-label="Link to this section">#</a></h2>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Terminal</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-bash">dotnet <span class="hljs-built_in">test</span> backend</code></pre></div>
+
+<p>About 70 tests in roughly 30 seconds. They need <strong>Docker running</strong>, because they run against a
+real PostgreSQL database, <code>flicked_test</code>, which the fixture creates and migrates itself.</p>
+
+<h3 id="why-real-postgres-and-not-an-in-memory-provider">Why real Postgres and not an in-memory provider<a class="anchor" href="#why-real-postgres-and-not-an-in-memory-provider" aria-label="Link to this section">#</a></h3>
+
+<p>Because the most important things in this codebase are races, and an in-memory provider cannot express
+them:</p>
+
+<ul>
+  <li>the server pool hands out servers with <code>FOR UPDATE SKIP LOCKED</code>, so two matches filling at the
+  same instant get different servers;</li>
+  <li>two party invites accepted simultaneously are resolved by a unique index refusing the second insert;</li>
+  <li>a match is finished by a conditional <code>UPDATE</code>, so a duplicate <code>series_end</code>, which the plugin
+  genuinely sends, changes nothing the second time.</li>
+</ul>
+
+<p>A test suite that cannot fail on any of those is decoration.</p>
+
+<h3 id="when-a-test-is-expected">When a test is expected<a class="anchor" href="#when-a-test-is-expected" aria-label="Link to this section">#</a></h3>
+
+<blockquote><p>If your change could break in a way a human would only notice during a match, write the test that
+notices it first.</p></blockquote>
+
+<div class="grid gap-3.5 sm:grid-cols-2">
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <p class="flex items-center gap-2 text-[14.5px] font-semibold text-foreground"><span class="text-primary-light"><svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>Needs a test</p>
+    <p class="mt-2 text-[13.5px] leading-relaxed">New endpoints; changes to matchmaking, rating or the pool; anything concurrent; anything parsing what the CS2 server sends; every bug fix (failing before, passing after).</p>
+  </div>
+  <div class="rounded-xl border border-white/[.08] bg-surface p-5">
+    <p class="flex items-center gap-2 text-[14.5px] font-semibold text-foreground"><span class="text-subtle"><svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span>Does not</p>
+    <p class="mt-2 text-[13.5px] leading-relaxed">Documentation, copy changes, styling, and pure refactors where existing tests already cover the behaviour.</p>
+  </div>
+</div>
+
+<p><strong>Write the test at the level the bug lives.</strong> Most of the suite tests services against a real
+database, because that is where the logic is. For arithmetic, a pure unit test is better: see
+<code>RatingTests.cs</code>.</p>
+
+<h3 id="the-other-checks">The other checks<a class="anchor" href="#the-other-checks" aria-label="Link to this section">#</a></h3>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Terminal</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-bash"><span class="hljs-built_in">cd</span> launcher &amp;&amp; npx tsc --noEmit        <span class="hljs-comment"># launcher types</span>
+<span class="hljs-built_in">cd</span> launcher/src-tauri &amp;&amp; cargo check   <span class="hljs-comment"># launcher Rust</span>
+<span class="hljs-built_in">cd</span> website   &amp;&amp; npx next build         <span class="hljs-comment"># website builds</span>
+<span class="hljs-built_in">cd</span> dashboard &amp;&amp; npx next build         <span class="hljs-comment"># dashboard builds</span></code></pre></div>
+
+<aside class="callout callout-tip"><svg class="size-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg><div>
+  <p><code>cargo check</code> occasionally reports <code>Finished</code> without recompiling anything. If it returns
+  suspiciously fast after a real edit, make it prove itself with <code>cargo clean -p launcher &amp;&amp; cargo
+  check</code>.</p>
+</div></aside>
+
+<h2 id="style">Style<a class="anchor" href="#style" aria-label="Link to this section">#</a></h2>
+
+<p><strong>Comments explain why, not what.</strong> This is the one thing most likely to come up in review. The code
+says what it does; a comment earns its place by explaining a decision, a trade-off, or a trap.</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">Example</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-csharp"><span class="hljs-comment">// Bad: restates the code</span>
+<span class="hljs-comment">// loop over the players and set their team</span>
+
+<span class="hljs-comment">/* Good: explains the decision
+   Parties are placed whole rather than drafted player by player, because the
+   entire point of a party is landing on the same side. */</span></code></pre></div>
+
+<p>Read a few files near yours before writing, and match their density and voice. Naming and formatting follow
+whatever the surrounding file does; there is no separate style guide to memorise.</p>
+
+<h2 id="commits-and-pull-requests">Commits and pull requests<a class="anchor" href="#commits-and-pull-requests" aria-label="Link to this section">#</a></h2>
+
+<p><strong>Conventional commits</strong>, with a scope:</p>
+
+<div class="codeblock"><div class="codeblock-head"><span class="codeblock-title">git log</span><button type="button" class="copy-btn" data-copy aria-label="Copy code"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button></div><pre><code class="hljs language-text">feat(backend): the queue holds parties
+fix(launcher): one build-time API address, not two
+docs(roadmap): describe what shipped, and what is still wrong
+test(backend): the rating maths, its edges, and the same match twice</code></pre></div>
+
+<p><strong>In the pull request, say what you verified</strong>, something like:</p>
+
+<blockquote><p>Ran <code>dotnet test backend</code>, 70 passed. Checked <code>cargo check</code> and <code>tsc</code>. Did not test
+against a real CS2 server.</p></blockquote>
+
+<p>That last line is the important one. <strong>Never say something ran when it did not.</strong> "I could not test
+this part" is useful information; a confident claim that turns out false costs the next person hours.
+Unverified work is welcome; it just has to be labelled.</p>
+
+<p><strong>Keep a pull request to one concern.</strong> If you fixed a bug and noticed three other things, that is
+four pull requests, or one plus an issue.</p>
+
+<h2 id="security">Security<a class="anchor" href="#security" aria-label="Link to this section">#</a></h2>
+
+<ul>
+  <li><strong>Never commit secrets.</strong> <code>.env</code> is gitignored. If you think you committed a credential,
+  say so immediately: the fix is to rotate it, not to hide the commit.</li>
+  <li><strong>Do not open a public issue for a vulnerability.</strong> Contact the maintainer privately first.</li>
+</ul>
+
+<p>See <a href="security.html">Security</a> for what self-hosting over HTTP costs, and why changes that make the
+secure path easier are very welcome.</p>
+
+<h2 id="licensing">Licensing<a class="anchor" href="#licensing" aria-label="Link to this section">#</a></h2>
+
+<p>FLICKED is <a href="https://github.com/flickedgg/FLICKED/blob/main/LICENSE">MIT licensed</a>. By contributing, you
+agree your work is released under the same licence. If you port code from elsewhere, say where it came from
+and under what licence: FLICKED builds on other people's work and intends to credit it properly.</p>
+
+        </div>
+        <nav class="mt-20 grid gap-3 sm:grid-cols-2" aria-label="Pagination">
+          <a href="roadmap.html" class="group flex flex-col rounded-xl border border-white/[.08] bg-surface px-5 py-4 transition-colors hover:border-white/[.16] ">
+            <span class="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[.14em] text-subtle"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Previous</span>
+            <span class="mt-1.5 text-[15px] font-medium text-foreground transition-colors group-hover:text-primary-light">Roadmap &amp; decisions</span>
+          </a>
+        </nav>
+      </article>
+    </main>
+
+    <aside class="hidden xl:block">
+      <div class="sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto py-14">
+        <p class="mb-3 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-subtle">On this page</p>
+        <nav aria-label="On this page" id="toc">
+          <a class="toc-link" href="#before-you-write-code">Before you write code</a>
+          <a class="toc-link" href="#getting-set-up">Getting set up</a>
+          <a class="toc-link" href="#tests">Tests</a>
+          <a class="toc-link toc-sub" href="#why-real-postgres-and-not-an-in-memory-provider">Why real Postgres and not an in-memory provider</a>
+          <a class="toc-link toc-sub" href="#when-a-test-is-expected">When a test is expected</a>
+          <a class="toc-link toc-sub" href="#the-other-checks">The other checks</a>
+          <a class="toc-link" href="#style">Style</a>
+          <a class="toc-link" href="#commits-and-pull-requests">Commits and pull requests</a>
+          <a class="toc-link" href="#security">Security</a>
+          <a class="toc-link" href="#licensing">Licensing</a>
+        </nav>
+        <a href="https://github.com/flickedgg/FLICKED/blob/main/CONTRIBUTING.md" class="mt-6 inline-flex items-center gap-2 text-[13px] text-subtle transition-colors hover:text-foreground" target="_blank" rel="noopener"><svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>View source on GitHub</a>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="mt-10 border-t border-white/[.06]">
+    <div class="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-10 text-[13px] text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="" class="h-5 w-auto opacity-80">
+        <span>FLICKED is free, open source and MIT licensed. Not affiliated with Valve.</span>
+      </div>
+      <div class="flex gap-5">
+        <a href="https://github.com/flickedgg/FLICKED" class="hover:text-foreground" target="_blank" rel="noopener">Repository</a>
+        <a href="contributing.html" class="hover:text-foreground">Contributing</a>
+        <a href="roadmap.html" class="hover:text-foreground">Roadmap</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- search -->
+  <dialog id="search-dialog" class="m-0 mx-auto mt-[12vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-white/10 bg-elevated p-0 text-muted shadow-plane2" aria-label="Search the docs">
+    <div class="flex items-center gap-3 border-b border-white/[.08] px-4">
+      <svg class="size-[18px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search pages and sections" class="h-14 w-full bg-transparent text-[15px] text-foreground placeholder:text-subtle focus:outline-none" aria-controls="search-results">
+      <kbd class="kbd">Esc</kbd>
+    </div>
+    <ul id="search-results" role="listbox" class="max-h-[56vh] overflow-y-auto p-2"></ul>
+    <div class="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[10.5px] text-subtle">
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span>
+      <span class="flex items-center gap-1.5"><kbd class="kbd">↵</kbd> open</span>
+    </div>
+  </dialog>
+
+  <script src="assets/search-index.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
